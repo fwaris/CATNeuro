@@ -1,0 +1,37 @@
+﻿Notes on design of neuro evolution with CA
+
+Each individual is a graph where nodes are operations and layers
+Graph consists of:
+1 - Nodes
+2 - Connections
+3 - Parameters
+
+Nodes 
+- start with simple initial population
+- add node between existing connections (complexify)
+- inputs and outputs nodes are added for each indidvidual and are not changed
+- initial population is created by inserting nodes between inputs and output
+
+Connections
+- add new connection by linking two nodes
+- enable / disable connection
+- each new connection get incremental 'innovation number' to track history
+
+Parameters
+- each node (opertaion) has tunable parameters that can be changed
+- E.g. latent space of dense or rnn
+
+Graph evolution - in order of exploration-exploitation continuum
+- Domain: add node (domain understands grammar and generates valid nets)
+- History: enable / disable connection
+- Topographic: crossover
+- Situational: add new connection
+- Normative: change parameter
+
+- ICE Knowledge
+- multiple inputs - single output which are all fixed
+- initial population is randomly generated nets from input to output
+- Each node consits of a cell:
+-- [BN] -> [Dense with Activation | Embedding | Op] -> [BN]
+
+

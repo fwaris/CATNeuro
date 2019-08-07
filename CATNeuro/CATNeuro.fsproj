@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Docs\NeuroEvolution.txt" />
+    <None Include="Tests\SetEnv.fsx" />
+    <None Include="Tests\GraphEvolution.fsx" />
+    <Compile Include="Probability.fs" />
+    <Compile Include="GE.fs" />
+  </ItemGroup>
+
+  <ItemGroup />
+
+</Project>

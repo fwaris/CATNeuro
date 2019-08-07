@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29102.190
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "CATNeuro", "CATNeuro\CATNeuro.fsproj", "{7F2E541F-8282-4CF1-B105-28EE3BB7D082}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7F2E541F-8282-4CF1-B105-28EE3BB7D082}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F2E541F-8282-4CF1-B105-28EE3BB7D082}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F2E541F-8282-4CF1-B105-28EE3BB7D082}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F2E541F-8282-4CF1-B105-28EE3BB7D082}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {50B5FED3-0BC4-4BCD-B8DB-560CD368035D}
+	EndGlobalSection
+EndGlobal
