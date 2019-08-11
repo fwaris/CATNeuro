@@ -5,13 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="Docs\NeuroEvolution.txt" />
-    <None Include="Tests\SetEnv.fsx" />
-    <None Include="Tests\GraphEvolution.fsx" />
-    <Compile Include="Probability.fs" />
-    <Compile Include="GE.fs" />
+    <PackageReference Update="FSharp.Core" Version="4.7.0" />
   </ItemGroup>
-
-  <ItemGroup />
 
 </Project>

@@ -12,6 +12,13 @@
         type Activation = NONE | Elu | Relu | LeakyRelu | Sig
         type Graph = {Nodes:Map<Id,Node>; Conns:Conn list}
 
+    //non-blocking id generation
+    [<AutoOpen; RequireQualifiedAccess>]
+    module IdGen =
+        let mutable private nodeId = 0
+        let mutable private connId = 0
+        let node() = let i = System.Threading.Interlocked.Increment(&nodeId) in string i
+        let conn() = let i = System.Threading.Interlocked.Increment(&connId) in i
 
     //operations on graphs  - including graph evolution
     module GOps =
@@ -28,11 +35,8 @@
 
         module private GOpsCore =
 
-            module IdGen =
-                let mutable private nodeId = 0
-                let mutable private connId = 0
-                let node() = let i = System.Threading.Interlocked.Increment(&nodeId) in string i
-                let conn() = let i = System.Threading.Interlocked.Increment(&connId) in i
+            let isInput (n:Node) = match n.Type with Input  -> true | _ -> false
+            let isOutput (n:Node) = match n.Type with Output _ -> true | _ -> false
 
             let randActivation (ex:Activation option) : Activation =
                     let activations = FSharp.Reflection.FSharpType.GetUnionCases(typeof<Activation>)
@@ -58,34 +62,72 @@
                                     }
                     }
 
+            let private validate (g:Graph) = 
+                let duplicateEdges = g.Conns |> List.countBy (fun c->c.From,c.To) |> List.filter (fun (_,c) -> c>1)
+                if duplicateEdges.IsEmpty |> not then failwithf "Invalid graph: duplicate edges %A" duplicateEdges
+
+                let adjM = 
+                    let m = g.Nodes |> Map.map (fun k _ ->[])
+                    let m2 = g.Conns |> List.map (fun c->c.From,c.To) |> List.groupBy fst |> List.map (fun (k,xs)->k,xs |> List.map snd)
+                    (m,m2) ||> List.fold (fun m (n,ls) -> m |> Map.add n ls)
+
+                let toSet = adjM |> Map.toList |> List.collect snd |> set
+                let fromSet = g.Nodes |> Map.toList |> List.choose (fun (k,v) -> if toSet |> Set.contains k then None else Some k) |> set
+                let nonInpNoIncming = fromSet |> Set.filter (fun i -> isInput g.Nodes.[i] |> not)
+                if nonInpNoIncming.IsEmpty |> not then failwithf "Invalid graph; these non inputs have zero incoming connections %A" nonInpNoIncming
+                let inputWIncming = toSet |> Set.filter (fun i -> isInput g.Nodes.[i])
+                if inputWIncming.IsEmpty |> not then failwithf "Invalid graph; inputs have incoming connections %A" inputWIncming
+                
+                //all internal nodes should be reachable from input nodes
+                let inputs = fromSet
+                let nonInputs = g.Nodes |> Map.toList |> List.filter (snd>>isInput>>not) |> List.map fst |> set
+
+                let rec traverse visited n =
+                    let visited = visited |> Set.add n
+                    let toVisit = adjM.[n] |> List.filter (fun t -> visited.Contains t |> not)
+                    (visited, toVisit) ||> List.fold traverse
+
+                let visited = (Set.empty,inputs) ||> Set.fold traverse
+
+                let unvisited = Set.difference nonInputs visited
+
+                if not unvisited.IsEmpty then failwithf "Invalid graph: nodes not reachable %A" unvisited
+
+                adjM,inputs
+
             ///topologically sort grpah
             let tsort (g:Graph) =
-                let adjM = g.Conns |> List.groupBy (fun c->c.From) |> Map.ofList
-                let dgriM = adjM |> Map.map (fun k v -> v.Length)
+                let adjM,inputs = validate g
+
+                let inDegrees = 
+                    let m = g.Conns |> List.groupBy (fun x->x.To) |> List.map(fun (k,xs) -> k, xs.Length) |> Map.ofList
+                    (m,inputs) ||> Set.fold (fun acc id -> acc |> Map.add id 0)
             
                 //(int*node) set used as priority q (credit: John Harrop)
-                let q = dgriM |> Seq.map (fun kv -> kv.Value,kv.Key) |> set 
+                let q = inDegrees |> Seq.map (fun kv -> kv.Value,kv.Key) |> set 
    
                 let rec loop acc m q =
                     if Set.isEmpty q then 
                         acc |> List.rev
                     else
-                        let (_,id) as minE = q |> Set.minElement 
+                        let (dgr,id) as minE = q |> Set.minElement 
+                        if dgr <> 0 then failwithf "Invalid graph: cycle detected involving node %A" id
                         let conns = adjM.[id]
                         let q = q |> Set.remove minE
-                        let (m,q) = ((m,q),conns) ||> List.fold (fun (m,q) c -> 
-                            let inDegree = m |> Map.find c.To
-                            let q = q |> Set.remove (inDegree,c.To)
+                        let (m,q) = ((m,q),conns) ||> List.fold (fun (m,q) toId -> 
+                            let inDegree = m |> Map.find toId
+                            let q = q |> Set.remove (inDegree,toId)
                             let inDegree = inDegree - 1
-                            let m = m |> Map.add id inDegree
+                            let m = m |> Map.add toId inDegree
                             let q =
                                 if inDegree >= 0 then
-                                    q |> Set.add (inDegree,c.To)
+                                    q |> Set.add (inDegree,toId)
                                 else
                                     q
                             (m,q))
                         loop (id::acc) m q
-                loop [] dgriM q
+                loop [] inDegrees q
+
 
             ///get a randomly selected connection
             let randConn (g:Graph) = g.Conns.[Probability.RNG.Value.Next(g.Conns.Length)]
@@ -96,9 +138,6 @@
                 |> List.filter (fun c -> c <> removeConn)
                 |> List.append addList
                 |> List.sortBy (fun c->c.Innovation)
-
-            let isInput (n:Node) = match n.Type with Input  -> true | _ -> false
-            let isOutput (n:Node) = match n.Type with Output _ -> true | _ -> false
 
             ///return a new possible random connection that does not yet exist (or None if not possible)
             let randUnconn (g:Graph) =
@@ -179,12 +218,31 @@
                 | x -> x
             {g with Nodes=g.Nodes |> Map.add nodeId {na with Type=nType}}
         
-        let printConn c = 
-            let (Id f) = c.From
-            let (Id t) = c.To
-            let on = if c.On then "->" else "--"
-            sprintf "%d.%s%s%s" c.Innovation f on t
 
+        ///remove dead nodes
+        ///only keep nodes that are on the path 
+        ///from inputs to outputs
+        let trimGraph (g:Graph) =
+            let revIds = tsort g |> List.rev |> List.toArray
+            let i = revIds |> Array.findIndex (fun id -> g.Nodes.[id] |> isOutput |> not)
+            let out,rest = set revIds.[0..i-1], Array.toList revIds.[i..]
+    
+            let revAdjM = 
+                let m = g.Nodes |> Map.map (fun k _ ->[])
+                let m2 = g.Conns |> List.filter (fun c->c.On) |> List.map (fun c->c.To,c.From) |> List.groupBy fst |> List.map (fun (k,xs)->k,xs |> List.map snd)
+                (m,m2) ||> List.fold (fun m (n,ls) -> m |> Map.add n ls)                    
+    
+            let rec traverse reachable n =
+                let reachable = reachable |> Set.add n
+                let incoming = revAdjM.[n]
+                (reachable,incoming) ||> List.fold traverse
+
+            let reachable = (Set.empty,out) ||> Set.fold traverse
+
+            let trimConns = g.Conns |> List.filter (fun c -> reachable.Contains c.From && reachable.Contains c.To)
+            let trimNodes = g.Nodes |> Map.filter (fun k _ -> reachable.Contains k)
+            {Nodes=trimNodes; Conns=trimConns}
+        
 
 
 
