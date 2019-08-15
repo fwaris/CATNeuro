@@ -33,6 +33,8 @@
                 MaxCellDims : int
             }
 
+        type Match = SameL | DiffL | FrmL | FrmR| ExsL | ExsR
+
         module private GOpsCore =
 
             let isInput (n:Node) = match n.Type with Input  -> true | _ -> false
@@ -128,9 +130,11 @@
                         loop (id::acc) m q
                 loop [] inDegrees q
 
-
+            let rng = System.Random()
             ///get a randomly selected connection
-            let randConn (g:Graph) = g.Conns.[Probability.RNG.Value.Next(g.Conns.Length)]
+            let randConn (g:Graph) = 
+                g.Conns.[Probability.RNG.Value.Next(g.Conns.Length)]
+                //g.Conns.[rng.Next(g.Conns.Length)]
 
             ///update the connection list by removing one connection and adding a list of new connections
             let updateConns removeConn addList baseList = 
@@ -158,7 +162,37 @@
                 else
                     Some (unconnected.[RNG.Value.Next(unconnected.Length)])
 
+        
+            ///match connection genes by innovation number
+            ///in case of same innovation #, left connection is taken
+            let diffConn (a:Graph) (b:Graph) =
+                let acs = a.Conns |> List.sortBy (fun x -> x.Innovation)
+                let bcs = b.Conns |> List.sortBy (fun x -> x.Innovation)
+            
+                let rec loop acc ls rs =
+                    match ls,rs with
+                    | [],[]                                              -> List.rev acc
+                    | [],r::rest                                         -> loop ((ExsR,r)::acc) ls rest
+                    | l::rest,[]                                         -> loop ((ExsL,l)::acc) rest rs
+                    | l::restL,r::restR when l = r                       -> loop ((SameL,l)::acc) restL restR
+                    | l::restL,r::restR when l.Innovation = r.Innovation -> loop ((DiffL,l)::acc) restL restR
+                    | l::restL,r::restR when l.Innovation < r.Innovation -> loop ((FrmL,l)::acc) restL rs
+                    | _,r::restR                                         -> loop ((FrmR,r)::acc) ls restR
+        
+                loop [] acs bcs
+        
         open GOpsCore
+
+        ///merge genes of two parents
+        ///parent a is considered dominant (fitter)
+        let crossover cfg (a:Graph) (b:Graph) =
+            let ms = diffConn a b
+            let nodes,conns = (([],[]),ms) ||> List.fold (fun (ns,cs) mtch -> 
+                match mtch with
+                | SameL,c | DiffL,c | FrmL,c | ExsL,c -> a.Nodes.[c.From]::a.Nodes.[c.To]::ns,c::cs
+                | FrmR,c | ExsR, c -> b.Nodes.[c.From]::b.Nodes.[c.To]::ns,c::cs
+                )
+            {Nodes=nodes |> List.map (fun n->n.Id,n) |> Map.ofList; Conns=conns}
 
         ///add node to graph by splitting a connection
         //('complexify' in NEAT)
@@ -166,8 +200,9 @@
             let conn = randConn g
             let newNode = genCell cfg 
             let forwardConn = {On=true; Innovation=IdGen.conn(); From=newNode.Id; To=conn.To}
-            let backConn = {conn with To=newNode.Id}
-            let conns = g.Conns |> updateConns conn [backConn;forwardConn] 
+            let backConn = {conn with To=newNode.Id; Innovation=IdGen.conn()}
+            let disConn = {conn with On=false}
+            let conns = g.Conns |> updateConns conn [backConn;forwardConn;disConn] 
             {Nodes=g.Nodes |> Map.add newNode.Id newNode; Conns=conns}
 
         ///toggle a random connection

@@ -53,14 +53,14 @@ let sampleGraph() =
 
     let conns = 
         [
-            {On=true; Innovation=0; From=inter1.Id; To=last.Id}
-            {On=true; Innovation=1; From=inter2.Id; To=last.Id}
+            {On=true; Innovation=IdGen.conn(); From=inter1.Id; To=last.Id}
+            {On=true; Innovation=IdGen.conn(); From=inter2.Id; To=last.Id}
             //{On=true; Innovation=2; From=inter2.Id; To=inter1.Id}
-            {On=true; Innovation=3; From=inter3.Id; To=inter2.Id}
-            {On=true; Innovation=4; From=inter1.Id; To=inter3.Id}
-            {On=true; Innovation=5; From=inter1.Id; To=inter2.Id}
-            {On=true; Innovation=6; From=input1.Id; To=inter1.Id}
-            {On=true; Innovation=7; From=inter1.Id; To=inter4.Id}
+            {On=true; Innovation=IdGen.conn(); From=inter3.Id; To=inter2.Id}
+            {On=true; Innovation=IdGen.conn(); From=inter1.Id; To=inter3.Id}
+            {On=true; Innovation=IdGen.conn(); From=inter1.Id; To=inter2.Id}
+            {On=true; Innovation=IdGen.conn(); From=input1.Id; To=inter1.Id}
+            {On=true; Innovation=IdGen.conn(); From=inter1.Id; To=inter4.Id}
         ]
         
     {Nodes=[last; inter1; inter2; inter3; inter4; input1] |> List.map(fun i->i.Id,i) |> Map.ofList; Conns=conns}
@@ -69,30 +69,29 @@ let g = sampleGraph()
 
 (*
 SetEnv.showGraph "sample 1" g
-*)
 let gt = g |> trimGraph
 SetEnv.showGraph "sample 1 trim" gt
+*)
 
 let cfg = {MinCellDims=10; MaxCellDims=20; MaxNodes=10}
 
 let dmpC g = g.Conns |> List.iter (printConn >> printfn "%s" )
 
 let testToggle() =
-    let g1 = GOps.toggleConnection cfg g
-    g1 = g1 
+    let gt1 = toggleConnection cfg g
+    gt1 = gt1 
 
-    let g2 = GOps.toggleConnection cfg g1
+    let gt2 = toggleConnection cfg gt1
 
-    g2 = g1
-    g2 = g
+    gt2 = gt1
+    gt2 = g
 
+    diffConn g gt1
+    diffConn gt1 gt2
 
-    g1.Conns |> List.map printConn
-    g.Conns |> List.map printConn
-    g2.Conns|> List.map printConn
-
-    diffConn g1 g2
-    diffConn g g2
+    dmpC g
+    dmpC gt1
+    dmpC gt2
 
 let testAddConn() =
     let g1 = addConnection cfg g
@@ -107,3 +106,19 @@ let testAddConn() =
     dmpC g2
     diffConn g1 g
 
+let testAddNode() =
+    let g1 = addNode cfg g
+    let g2 = addNode cfg g1
+    SetEnv.showGraph "g" g
+    SetEnv.showGraph "g1" g1
+    SetEnv.showGraph "g2" g2
+    let gn = (g,[1 .. 10]) ||> List.fold (fun x i -> printfn "i=%d" i; addNode cfg x)
+    SetEnv.showGraph "gn" gn
+
+let testCrossover() = 
+    let g1 = addNode cfg g
+    let g2 = addNode cfg g1
+    let g3 = crossover cfg g1 g2
+    SetEnv.showGraph "g1" g1
+    SetEnv.showGraph "g2" g2
+    SetEnv.showGraph "g3" g3

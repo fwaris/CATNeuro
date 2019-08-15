@@ -14,13 +14,21 @@ module GraphDrawing =
         g.Conns |> List.iter (fun c-> 
             let (Id f) = c.From
             let (Id t) = c.To
-            let on = if c.On then "On" else ""
-            gr.AddEdge(f,on,t)|> ignore)
+            let l = sprintf "%d" c.Innovation 
+            let e = gr.AddEdge(f,l,t)
+            e.UserData <- c.On
+            )
         gr
+
+let styleEdge (e:Microsoft.Msagl.Drawing.Edge) =
+    match e.UserData with
+    | :? bool as b when not b -> e.Attr.AddStyle(Microsoft.Msagl.Drawing.Style.Dotted)
+    | _ -> ()
 
 let showGraph title g  = 
   let gv = new Microsoft.Msagl.GraphViewerGdi.GViewer()
   let gr = GraphDrawing.makeGraph g
+  gr.Edges |> Seq.iter styleEdge
   gv.Graph <- gr
   let f = new System.Windows.Forms.Form()
   f.Text <- title
