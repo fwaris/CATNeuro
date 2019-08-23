@@ -1,13 +1,12 @@
 ﻿#load "References.fsx"
-open GELang.G
-
+open CATNeuro
 open Microsoft.Msagl.GraphViewerGdi
 
 module GraphDrawing =
     type NodeM = Microsoft.Msagl.Drawing.Node
     open Microsoft.Msagl.Drawing
 
-    let makeGraph (g:GELang.G.Graph) =
+    let makeGraph (g:CATNeuro.Graph) =
         let nodes = g.Nodes |> Map.toList |> List.map (fun (Id s,_) -> NodeM(s))    
         let gr = new Microsoft.Msagl.Drawing.Graph()
         nodes |> List.iter gr.AddNode

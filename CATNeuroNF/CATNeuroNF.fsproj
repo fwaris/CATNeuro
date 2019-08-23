@@ -44,8 +44,10 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Probability.fs" />
-    <Compile Include="GE.fs" />
+    <Compile Include="Types.fs" />
+    <Compile Include="GraphOps.fs" />
     <Compile Include="GEDiag.fs" />
+    <Compile Include="CA.fs" />
     <Content Include="packages.config" />
     <Content Include="Docs\NeuroEvolution.txt" />
     <None Include="Tests\References.fsx" />
