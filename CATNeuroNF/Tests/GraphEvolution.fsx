@@ -46,7 +46,7 @@ let sampleGraph() =
             {On=true; Innovation=cfg.IdGen.conn(); From=inter1.Id; To=inter4.Id}
         ]
         
-    {Parms=p; Nodes=[last; inter1; inter2; inter3; inter4; input1] |> List.map(fun i->i.Id,i) |> Map.ofList; Conns=conns}
+    {Nodes=[last; inter1; inter2; inter3; inter4; input1] |> List.map(fun i->i.Id,i) |> Map.ofList; Conns=conns}
 
 let g = sampleGraph()
 

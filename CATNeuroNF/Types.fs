@@ -1,19 +1,19 @@
 ﻿namespace rec CATNeuro
 
-
 type Node = {Id:Id; Type:NodeType}
 type Id = Id of string
 type NodeType = Cell of Cell | Output of Dense | Input
 type Conn = {On:bool; From:Id; To:Id; Innovation:int}
 type Cell = 
-    | Species of int 
+    | ModuleSpecies of int 
     | Dense of Dense
     | BatchNorm
     | LayerNorm
+    | SubGraph of Graph
 type Dense = {Dims:int; Bias:bool; Activation:Activation}
 type Activation = NONE | Elu | Relu | LeakyRelu | Sig
 type LearningParms = {Rate:float;} with static member Default = {Rate=0.01}
-type Graph = {Parms:LearningParms; Nodes:Map<Id,Node>; Conns:Conn list}
+type Graph = {Nodes:Map<Id,Node>; Conns:Conn list}
 
 type IdGen() =
     let mutable nodeId = 0
@@ -24,6 +24,8 @@ type IdGen() =
 type Range = {Lo:float; Hi:float}
 
 type SpeciesType = Blueprint | Module of int
+
+type IndvidualType = BlueprintIndv of LearningParms | ModuleIndv
 
 type Cfg =
     {
@@ -39,19 +41,25 @@ type Cfg =
                                 LearnRange={Lo=0.01; Hi=0.1}
                                 MaxNodes=10;}
 
-type Individual = {Fitness:float; Graph:Graph; Id:int}
+type Knowledge       = Situational | Historical | Normative | Topgraphical | Domain 
+type Individual = {Fitness:float[]; Graph:Graph; Id:int; IndvType:IndvidualType; KS : Knowledge}
 type Population = {Species:SpeciesType; Individuals:Individual[]; Cfg:Cfg}
+
+type SpeciesIndv = {SpeciesId:int; IndvidualId:int}
+
+type NetworkAssembly = {BlueprintId:int; Parms:LearningParms; Graph:Graph; ModuleReplacements:SpeciesIndv[] }
+
+type Settings = {TakeFraction: float} with static member Default = {TakeFraction=0.25}
 
 type CA =
     {
-        Populations : Population[]
-                   
+        Populations  : Population[]
+        Evaluator    : NetworkAssembly -> Async<int*float[]> //multi objective
+        ParetoRank   : (int*float[])[] -> int[]
+        Settings     : Settings
     }
 
 type Match = SameL | DiffL | FrmL | FrmR| ExsL | ExsR
-
-        
-            
 
 
 

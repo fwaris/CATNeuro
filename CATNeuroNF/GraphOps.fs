@@ -181,10 +181,10 @@ module GraphOps =
         let nb = g.Nodes.[tmpltNodeId]
         let nType =
             match na.Type,nb.Type with
-            | Cell (Species a), Cell (Species b) -> Cell (Species b)
-            | Cell (Dense a), Cell (Dense b)     -> Cell (Dense b)
-            | Cell BatchNorm, Cell BatchNorm     -> Cell BatchNorm //todo
-            | Cell LayerNorm, Cell LayerNorm     -> Cell LayerNorm //todo
+            | Cell (ModuleSpecies a), Cell (ModuleSpecies b) -> Cell (ModuleSpecies b)
+            | Cell (Dense a), Cell (Dense b)                 -> Cell (Dense b)
+            | Cell BatchNorm, Cell BatchNorm                 -> Cell BatchNorm //todo
+            | Cell LayerNorm, Cell LayerNorm                 -> Cell LayerNorm //todo
             | x,_ -> x
         {g with Nodes=g.Nodes |> Map.add nodeId {na with Type=nType}}
 
@@ -193,10 +193,10 @@ module GraphOps =
         let na = g.Nodes.[nodeId]
         let nType =
             match na.Type with
-            | Cell (Species a)   -> Cell (Species (RNG.Value.Next(cfg.NumSpecies)))
-            | Cell (Dense a)     -> Cell (Dense {a with Dims=RNG.Value.Next(int cfg.DenseRange.Lo, int cfg.DenseRange.Hi)})
-            | Cell BatchNorm     -> Cell BatchNorm //todo
-            | Cell LayerNorm     -> Cell LayerNorm //todo
+            | Cell (ModuleSpecies a) -> Cell (ModuleSpecies (RNG.Value.Next(cfg.NumSpecies)))
+            | Cell (Dense a)         -> Cell (Dense {a with Dims=RNG.Value.Next(int cfg.DenseRange.Lo, int cfg.DenseRange.Hi)})
+            | Cell BatchNorm         -> Cell BatchNorm //todo
+            | Cell LayerNorm         -> Cell LayerNorm //todo
             | x -> x
 
         {g with Nodes=g.Nodes |> Map.add nodeId {na with Type=nType}}
