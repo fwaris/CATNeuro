@@ -11,23 +11,23 @@ let sampleGraph() =
 
     let inter1 = 
                  {
-                    Id = Id"inter1"
+                    Id = cfg.IdGen.node() |> Id
                     Type = Cell (Dense {Dims =6; Bias=false; Activation=NONE})
                  }
 
     let inter2 = 
                 {
-                   Id = Id"inter2"
+                   Id = cfg.IdGen.node() |> Id
                    Type = Cell (Dense {Dims = 5; Bias=false; Activation=NONE})              
                 }
     let inter3 = 
                 {
-                   Id = Id"inter3"
+                   Id = cfg.IdGen.node() |> Id
                    Type = Cell (Dense {Dims = 7; Bias=false; Activation=NONE})               
                 }
     let inter4 = 
                 {
-                   Id = Id"inter4"
+                   Id = cfg.IdGen.node() |> Id
                    Type = Cell (Dense {Dims = 3; Bias=false; Activation=NONE})
                 }
 
@@ -62,6 +62,7 @@ let dmpC g = g.Conns |> List.iter (printConn >> printfn "%s" )
 let testToggle() =
     let gt1 = toggleConnection cfg g
     gt1 = gt1 
+    SetEnv.showGraph "toggle connection"  gt1
 
     let gt2 = toggleConnection cfg gt1
 
@@ -79,7 +80,7 @@ let testAddConn() =
     let g1 = addConnection cfg g
     let g2 = addConnection cfg g1
     let g3 = addConnection cfg g2
-    SetEnv.showGraph "g1" g1
+    SetEnv.showGraph "add connection" g1
     SetEnv.showGraph "g" g
     SetEnv.showGraph "g2" g2
     SetEnv.showGraph "g3" g3
@@ -92,10 +93,18 @@ let testAddNode() =
     let g1 = addNode cfg g
     let g2 = addNode cfg g1
     SetEnv.showGraph "g" g
-    SetEnv.showGraph "g1" g1
+    SetEnv.showGraph "add node" g1
     SetEnv.showGraph "g2" g2
     let gn = (g,[1 .. 10]) ||> List.fold (fun x i -> printfn "i=%d" i; addNode cfg x)
     SetEnv.showGraph "gn" gn
+
+let testCrossover1() =
+    let g1 = addNode cfg g
+    let g2 = addNode cfg g
+    let g3 = crossover cfg g1 g2
+    SetEnv.showGraph "g1" g1
+    SetEnv.showGraph "g2" g2
+    SetEnv.showGraph "crossover" g3
 
 let testCrossover() = 
     let g1 = addNode cfg g

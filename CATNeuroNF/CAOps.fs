@@ -1,5 +1,6 @@
 ﻿namespace CATNeuro
 open Ext
+
 type FitHist = {Id:int; Fitness:float[]}
 type ShState = 
     {
@@ -23,8 +24,7 @@ module rec CAOps =
                 st',pop'::acc)
         (st',{ca with Populations=pop' |> List.toArray})
 
-    let updateState ca st  = st
-
+    /// CA acceptance function
     let acceptance st ca pop = 
         let indvMap = pop.Individuals |> Array.map (fun ind->ind.Id,ind) |> Map.ofArray
 
@@ -34,9 +34,11 @@ module rec CAOps =
 
         pareto |> Array.take ((float pareto.Length) * ca.Settings.TakeFraction |> int)        
         
+    ///CA influence function
     let influence st topP pop =
         let st',indvs' = distributeKnowledge st pop.Individuals
         let indvKs = indvs' |> Array.groupBy (fun k->k.KS)
+
         let (st'',indvs'') =
             ((st',[]),indvKs) 
             ||> Array.fold (fun (st,acc) (ks,indvs) ->
@@ -49,7 +51,6 @@ module rec CAOps =
                     | Normative     -> normativeInfluence   pop.Cfg topP st indvs
                 st',indvs'::acc)
                 
-         
         let indvs''' = Seq.collect yourself indvs'' |> Seq.sortBy (fun (i:Individual)->i.Id) |> Seq.toArray
         st'',{pop with Individuals=indvs'''}
 

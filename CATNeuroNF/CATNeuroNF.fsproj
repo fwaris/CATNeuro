@@ -48,6 +48,7 @@
     <Compile Include="Types.fs" />
     <Compile Include="GraphOps.fs" />
     <Compile Include="GEDiag.fs" />
+    <Compile Include="BeliefSpace.fs" />
     <Compile Include="CAOps.fs" />
     <Compile Include="CARun.fs" />
     <Content Include="packages.config" />
