@@ -1,7 +1,7 @@
 ﻿namespace CATNeuro
 open Probability
 
-module GraphOps =
+module rec GraphOps =
     let isInput (n:Node) = match n.Type with Input  -> true | _ -> false
     let isOutput (n:Node) = match n.Type with Output _ -> true | _ -> false
 
@@ -136,12 +136,12 @@ module GraphOps =
         let rec loop acc ls rs =
             match ls,rs with
             | [],[]                                              -> List.rev acc
-            | [],r::rest                                         -> loop ((ExsR,r)::acc) ls rest
-            | l::rest,[]                                         -> loop ((ExsL,l)::acc) rest rs
-            | l::restL,r::restR when l = r                       -> loop ((SameL,l)::acc) restL restR
-            | l::restL,r::restR when l.Innovation = r.Innovation -> loop ((DiffL,l)::acc) restL restR
-            | l::restL,r::restR when l.Innovation < r.Innovation -> loop ((FrmL,l)::acc) restL rs
-            | _,r::restR                                         -> loop ((FrmR,r)::acc) ls restR
+            | [],r::rest                                         -> loop ((ExtraR r)::acc) ls rest
+            | l::rest,[]                                         -> loop ((ExtraL l)::acc) rest rs
+            | l::restL,r::restR when l = r                       -> loop ((Same l)::acc) restL restR
+            | l::restL,r::restR when l.Innovation = r.Innovation -> loop ((Diff(l,r))::acc) restL restR
+            | l::restL,r::restR when l.Innovation < r.Innovation -> loop ((FrmL l)::acc) restL rs
+            | _,r::restR                                         -> loop ((FrmR r)::acc) ls restR
 
         loop [] acs bcs
 
@@ -152,8 +152,8 @@ module GraphOps =
         let ms = diffConn a b
         let nodes,conns = (([],[]),ms) ||> List.fold (fun (ns,cs) mtch -> 
             match mtch with
-            | SameL,c | DiffL,c | FrmL,c | ExsL,c -> a.Nodes.[c.From]::a.Nodes.[c.To]::ns,c::cs
-            | FrmR,c | ExsR, c -> b.Nodes.[c.From]::b.Nodes.[c.To]::ns,c::cs
+            | Same c | Diff (c,_) | FrmL c | ExtraL c -> a.Nodes.[c.From]::a.Nodes.[c.To]::ns,c::cs
+            | FrmR c | ExtraR c                       -> b.Nodes.[c.From]::b.Nodes.[c.To]::ns,c::cs
             )
         {a with Nodes=nodes |> List.map (fun n->n.Id,n) |> Map.ofList; Conns=conns}
 
@@ -231,7 +231,52 @@ module GraphOps =
         let trimNodes = g.Nodes |> Map.filter (fun k _ -> reachable.Contains k)
         {g with Nodes=trimNodes; Conns=trimConns}
 
-    let 
+    ///a measure of distance between two dense cell types
+    let distDense (d1:Dense) (d2:Dense) =
+        let dist = 
+            [
+                (if (d1.Activation = d2.Activation) then 0.0 else 1.0)
+                (if (d1.Bias = d2.Bias) then 0.0 else 1.0)
+                abs ((float d1.Dims) - (float d2.Dims)) / (float (d1.Dims + d2.Dims))
+            ]
+            |> List.sum
+        dist / 3.0
+
+    ///a measure of distance between two cells
+    let distCell (c1:Cell) (c2:Cell) =
+        let W = 1.0
+        match c1, c2 with
+        | ModuleSpecies a, ModuleSpecies b when a = b -> 0.0
+        | BatchNorm, BatchNorm                        -> 0.0
+        | LayerNorm, LayerNorm                        -> 0.0
+        | Dense d1, Dense d2                          -> distDense d1 d2
+        | SubGraph s1, SubGraph s2                    -> distGraph s1 s2
+        | _, _                                        -> W
+       
+    ///a measure of distance between two nodes
+    let distConn (n1:Node) (n2:Node) =
+        let W=2.0
+        match n1.Type, n2.Type with
+        | Input, Input          -> 0.0
+        | Output _, Output _    -> 0.0
+        | Cell c1, Cell c2      -> distCell c1 c2
+        | _, _                  -> W
+
+    ///a measure of distance between two 
+    ///graphs
+    let distGraph (g1:Graph) (g2:Graph) = 
+        let W = 5.0
+        diffConn g1 g2
+        |> List.map (
+            function 
+            | Same c     -> 0.0
+            | Diff (l,r) -> distConn g1.Nodes.[l.To] g2.Nodes.[r.To]
+            | FrmL c     -> W
+            | FrmR c     -> W
+            | ExtraR c   -> W
+            | ExtraL c   -> W
+        )
+        |> List.sum
 
 
 

@@ -62,18 +62,11 @@ type CA =
         Network      : Network
     }
 
-type Match = SameL | DiffL | FrmL | FrmR| ExsL | ExsR
-
-
-
-
-
-
-
-
-
-
-            
-        
-        
+type ConnMatch = 
+    | Same      of Conn 
+    | Diff      of Left:Conn*Right:Conn 
+    | FrmL      of Conn 
+    | FrmR      of Conn
+    | ExtraR    of Conn
+    | ExtraL    of Conn
 
