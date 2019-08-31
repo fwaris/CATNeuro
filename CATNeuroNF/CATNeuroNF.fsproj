@@ -46,16 +46,23 @@
     <Compile Include="Extensions.fs" />
     <Compile Include="Probability.fs" />
     <Compile Include="Types.fs" />
-    <Compile Include="GraphOps.fs" />
-    <Compile Include="GEDiag.fs" />
-    <Compile Include="BeliefSpace.fs" />
-    <Compile Include="CAOps.fs" />
-    <Compile Include="CARun.fs" />
-    <Content Include="packages.config" />
+    <Compile Include="Graph\GraphOps.fs" />
+    <Compile Include="Graph\GraphDiag.fs" />
+    <Compile Include="CA\CAState.fs" />
+    <Compile Include="CA\KDStagHunt.fs" />
+    <Compile Include="CA\KS\DomainKS.fs" />
+    <Compile Include="CA\KS\NormativeKS.fs" />
+    <Compile Include="CA\KS\HistoryKS.fs" />
+    <Compile Include="CA\KS\TopographicKS.fs" />
+    <Compile Include="CA\KS\SituationalKS.fs" />
+    <Compile Include="CA\BeliefSpace.fs" />
+    <Compile Include="CA\CARunner.fs" />
+    <Compile Include="CA\NormativeKS.fs" />
     <Content Include="Docs\NeuroEvolution.txt" />
     <None Include="Tests\References.fsx" />
     <None Include="Tests\SetEnv.fsx" />
     <None Include="Tests\GraphEvolution.fsx" />
+    <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.Core">

@@ -1,6 +1,6 @@
 ﻿namespace CATNeuro
 
-module GDiag =
+module GraphDiag =
 
     let printConn c = 
         let (Id f) = c.From

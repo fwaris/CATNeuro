@@ -89,8 +89,6 @@ module GraphOps =
                 loop (id::acc) m q
         loop [] inDegrees q
 
-    let rng = System.Random()
-
     ///get a randomly selected connection
     let randConnForToggle (g:Graph) = 
         let inputs = g.Conns |> List.filter (fun c->isInput g.Nodes.[c.From])
@@ -232,6 +230,8 @@ module GraphOps =
         let trimConns = g.Conns |> List.filter (fun c -> reachable.Contains c.From && reachable.Contains c.To)
         let trimNodes = g.Nodes |> Map.filter (fun k _ -> reachable.Contains k)
         {g with Nodes=trimNodes; Conns=trimConns}
+
+    let 
 
 
 

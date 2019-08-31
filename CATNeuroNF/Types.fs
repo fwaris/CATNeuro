@@ -51,12 +51,15 @@ type NetworkAssembly = {BlueprintId:int; Parms:LearningParms; Graph:Graph; Modul
 
 type Settings = {TakeFraction: float} with static member Default = {TakeFraction=0.25}
 
+type Network = Individual[] ->  int -> Individual[]
+
 type CA =
     {
         Populations  : Population[]
         Evaluator    : NetworkAssembly -> Async<int*float[]> //multi objective
         ParetoRank   : (int*float[])[] -> int[]
         Settings     : Settings
+        Network      : Network
     }
 
 type Match = SameL | DiffL | FrmL | FrmR| ExsL | ExsR

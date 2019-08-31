@@ -1,13 +1,13 @@
 ﻿namespace CATNeuro
 open Probability
 open Ext
-open CAOps
+open BeliefSpace
 
 type TimeStep= {CA:CA ; Best:NetworkAssembly[]; Count:int; State:CAState}
 
-module rec CARun =
-    let isBlueprint = function Blueprint _ -> true | _ -> false 
-    let moduleId = function Module x -> Some x | _ -> None
+module rec CARunner =
+    let isBlueprint = function Blueprint _  -> true | _ -> false 
+    let moduleId    = function Module x     -> Some x | _ -> None
 
     ///set of module species referenced by the graph
     let moduleSpecies (g:Graph) = 
@@ -84,14 +84,26 @@ module rec CARun =
             
         let bprints' = {bprints with Individuals = bprints.Individuals |> Array.map (fun indv -> {indv with Fitness =  fmap.[indv.Id]})}
         {ca with Populations=Array.append [|bprints'|] spcs'}
-        
+
+
+    ///step through CA for each population
+    let stepPopulations (st:CAState) (ca:CA) = 
+        let (st',pop') =
+            ((st,[]),ca.Populations)
+            ||> Array.fold (fun (st,acc) pop -> 
+                let topP = acceptance ca st  pop
+                let st',pop' = influence ca st topP pop
+                st',pop'::acc)
+        (st',{ca with Populations=pop' |> List.toArray})
+    
+     ///single timestep 
     let step (st:TimeStep) =
         async {
             let networks = assembleNetworks st.CA
             let! evaluated = networks |> Array.map (st.CA.Evaluator) |> Async.Parallel 
             let nmap = networks |> Array.map (fun x->x.BlueprintId,x) |> Map.ofArray
             let ca' = attributeFitness st.CA networks evaluated
-            let state',ca'' = evolve st.State ca'
+            let state',ca'' = stepPopulations st.State ca'
             let rankedNetworks = st.CA.ParetoRank evaluated |> Array.map (fun i->nmap.[i])
             return 
                 {st with 
