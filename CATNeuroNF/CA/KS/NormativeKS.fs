@@ -15,12 +15,17 @@ module rec NormativeKS =
 
 
 (*
-Normative understand ranges.
-Tracks parameter ranges of best performers
-Move paramters of indiviuals towards the ranges
-Each paramter must have type so similar parameters
-can be matched across the various genomes
-if no match is found, a random mutation is performed
+Normative understand ranges and distributions.
+Tracks these for best performers
+Move paramters of influenced indiviuals towards the ranges of best
+
+Parameter types:
+- global parameters e.g. learning rate
+- cell type
+    | Cell (ModuleSpecies a)            -> pick from distribution
+    | Cell (Dense a)                    -> pick from distrbiution of dims, bias, activation
+    | Cell BatchNorm | Cell LayerNorm   -> pick from distribution between two types
+
 *)
 
 

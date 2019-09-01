@@ -5,24 +5,54 @@ module rec GraphOps =
     let isInput (n:Node) = match n.Type with Input  -> true | _ -> false
     let isOutput (n:Node) = match n.Type with Output _ -> true | _ -> false
 
+    ///select a random activation excluding 'ex' if provided
     let randActivation (ex:Activation option) : Activation =
-            let activations = FSharp.Reflection.FSharpType.GetUnionCases(typeof<Activation>)
-            let exVal = ex |> Option.map (fun a-> FSharp.Reflection.FSharpValue.GetUnionFields(a,typeof<Activation>) |> fst) 
-            let activations = exVal |> Option.map (fun x -> activations |> Array.filter (fun y-> x=y |> not)) |> Option.defaultValue activations
-            let act = activations.[RNG.Value.Next(activations.Length)]
-            FSharp.Reflection.FSharpValue.MakeUnion(act,[||]) :?> _
+        let activations = FSharp.Reflection.FSharpType.GetUnionCases(typeof<Activation>)
+        let exVal = ex |> Option.map (fun a-> FSharp.Reflection.FSharpValue.GetUnionFields(a,typeof<Activation>) |> fst) 
+        let activations = exVal |> Option.map (fun x -> activations |> Array.filter (fun y-> x=y |> not)) |> Option.defaultValue activations
+        let act = activations.[RNG.Value.Next(activations.Length)]
+        FSharp.Reflection.FSharpValue.MakeUnion(act,[||]) :?> _
 
-    ///generate a new random cell
-    let genCell cfg =
-            let dims = RNG.Value.Next(cfg.DenseRange.Lo, cfg.DenseRange.Hi)
-            let bias = RNG.Value.NextDouble() > 0.25
-            let activation = randActivation None
-            {
-              Id = cfg.IdGen.node() |> Id
-              Type =  Cell (Dense{Dims = int dims; Bias=bias; Activation=activation})
-            }
+    ///select a random normalization excluding 'ex' if provided
+    let randNormalization (ex:NormalizationType option) : NormalizationType =
+        let norms = FSharp.Reflection.FSharpType.GetUnionCases(typeof<NormalizationType>)
+        let exVal = ex |> Option.map (fun a-> FSharp.Reflection.FSharpValue.GetUnionFields(a,typeof<NormalizationType>) |> fst) 
+        let norms = exVal |> Option.map (fun x -> norms |> Array.filter (fun y-> x=y |> not)) |> Option.defaultValue norms
+        let sel =
+            if norms.Length = 1 then 
+                norms.[0]
+            else
+                norms.[RNG.Value.Next(norms.Length)]
+        FSharp.Reflection.FSharpValue.MakeUnion(sel,[||]) :?> _    
 
+    ///generate a new dense cell
+    let genDenseCell cfg =
+        let dims = RNG.Value.Next(cfg.DenseRange.Lo, cfg.DenseRange.Hi)
+        let bias = RNG.Value.NextDouble() > 0.25
+        let activation = randActivation None
+        {
+            Id = cfg.IdGen.node() |> Id
+            Type =  Cell (Dense{Dims = int dims; Bias=bias; Activation=activation})
+        }
 
+    ///generate a new normalization cell
+    let genNormCell cfg =
+        let ntype = Norm (randNormalization None)
+        {
+            Id = cfg.IdGen.node() |> Id
+            Type =  Cell ntype
+        }
+
+    ///generate a new blueprint cell
+    let genBlueprintCell cfg =
+        let ntype = ModuleSpecies (RNG.Value.Next(cfg.NumSpecies)) //pick a module species at random
+        let dims = RNG.Value.Next(cfg.DenseRange.Lo, cfg.DenseRange.Hi)
+        {
+            Id = cfg.IdGen.node() |> Id
+            Type =  Cell ntype
+        }
+
+    ///validate graph structure
     let private validate (g:Graph) = 
         let duplicateEdges = g.Conns |> List.countBy (fun c->c.From,c.To) |> List.filter (fun (_,c) -> c>1)
         if duplicateEdges.IsEmpty |> not then failwithf "Invalid graph: duplicate edges %A" duplicateEdges
@@ -161,12 +191,19 @@ module rec GraphOps =
     //('complexify' in NEAT)
     let addNode cfg (g:Graph) =
         let conn = randConn g
-        let newNode = genCell cfg 
-        let forwardConn = {On=true; Innovation=cfg.IdGen.conn(); From=newNode.Id; To=conn.To}
-        let backConn = {conn with To=newNode.Id; Innovation=cfg.IdGen.conn()}
-        let disConn = {conn with On=false}
-        let conns = g.Conns |> updateConns conn [backConn;forwardConn;disConn] 
-        {g with Nodes=g.Nodes |> Map.add newNode.Id newNode; Conns=conns}
+        let newNode = genDenseCell cfg 
+        insertNode cfg g conn newNode
+
+    let insertNode cfg (g:Graph) conn (newNode:Node) =
+        if cfg.MaxNodes > g.Nodes.Count then
+            printfn "max nodes reached"
+            g
+        else
+            let forwardConn = {On=true; Innovation=cfg.IdGen.conn(); From=newNode.Id; To=conn.To}
+            let backConn = {conn with To=newNode.Id; Innovation=cfg.IdGen.conn()}
+            let disConn = {conn with On=false}
+            let conns = g.Conns |> updateConns conn [backConn;forwardConn;disConn] 
+            {g with Nodes=g.Nodes |> Map.add newNode.Id newNode; Conns=conns}
 
     ///toggle a random connection
     let toggleConnection cfg (g:Graph) =
@@ -188,8 +225,7 @@ module rec GraphOps =
             match na.Type,nb.Type with
             | Cell (ModuleSpecies a), Cell (ModuleSpecies b) -> Cell (ModuleSpecies b)
             | Cell (Dense a), Cell (Dense b)                 -> Cell (Dense b)
-            | Cell BatchNorm, Cell BatchNorm                 -> Cell BatchNorm //todo
-            | Cell LayerNorm, Cell LayerNorm                 -> Cell LayerNorm //todo
+            | Cell (Norm a), Cell (Norm b)                   -> Cell (Norm b)
             | x,_ -> x
         {g with Nodes=g.Nodes |> Map.add nodeId {na with Type=nType}}
 
@@ -200,8 +236,7 @@ module rec GraphOps =
             match na.Type with
             | Cell (ModuleSpecies a) -> Cell (ModuleSpecies (RNG.Value.Next(cfg.NumSpecies)))
             | Cell (Dense a)         -> Cell (Dense {a with Dims=RNG.Value.Next(int cfg.DenseRange.Lo, int cfg.DenseRange.Hi)})
-            | Cell BatchNorm         -> Cell BatchNorm //todo
-            | Cell LayerNorm         -> Cell LayerNorm //todo
+            | Cell (Norm a)          -> Some a |> randNormalization |> Norm |> Cell
             | x -> x
 
         {g with Nodes=g.Nodes |> Map.add nodeId {na with Type=nType}}
@@ -247,8 +282,8 @@ module rec GraphOps =
         let W = 1.0
         match c1, c2 with
         | ModuleSpecies a, ModuleSpecies b when a = b -> 0.0
-        | BatchNorm, BatchNorm                        -> 0.0
-        | LayerNorm, LayerNorm                        -> 0.0
+        | Norm BatchNorm, Norm BatchNorm              -> 0.0
+        | Norm LayerNorm, Norm LayerNorm              -> 0.0
         | Dense d1, Dense d2                          -> distDense d1 d2
         | SubGraph s1, SubGraph s2                    -> distGraph s1 s2
         | _, _                                        -> W

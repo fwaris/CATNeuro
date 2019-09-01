@@ -1,6 +1,6 @@
 ﻿#load "SetEnv.fsx"
 open CATNeuro
-open CATNeuro.GDiag
+open CATNeuro.GraphDiag
 open CATNeuro.GraphOps
 
 let cfg = Cfg.Default

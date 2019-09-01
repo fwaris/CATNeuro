@@ -5,6 +5,7 @@
 #load @"..\Extensions.fs"
 #load @"..\Probability.fs"
 #load @"..\Types.fs"
-#load @"..\GraphOps.fs"
-#load @"..\GEDiag.fs"
+#load @"..\Extensions.fs"
+#load @"..\Graph\GraphOps.fs"
+#load @"..\Graph\GraphDiag.fs"
 

@@ -15,7 +15,7 @@ module rec BeliefSpace =
     
     ///CA influence function
     let influence ca st topP pop =
-        let st',indvs' = distributeKnowledge ca st pop.Species pop.Individuals
+        let st',indvs' = distributeKnowledge ca st pop.Cfg pop.Species pop.Individuals
         let indvKs = indvs' |> Array.groupBy (fun k->k.KS)
 
         let (st'',indvs'') =

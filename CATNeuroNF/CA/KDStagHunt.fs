@@ -1,29 +1,36 @@
 ﻿namespace CATNeuro
 open Ext
 
+///Knowledge distribution via Stag Hunt games
 module rec KDStagHunt = 
 
-    let defaultKSOrder = 
-            [|
-                Situational  //toggle connection   ///  exploitative to explorative order
-                Normative    //evolve parms
-                Historical   //add connection
-                Domain       //add new node
-                Topgraphical //graph union
-            |]
+    ///entry point for KD
+    let distributeKnowledge ca st cfg species pop =
+        let st',pop' =
+            if isCompetitiveGen st then
+                competitiveDist ca st species pop
+            else
+                cooperativeDist ca st species pop
+        let pop'' = adjustForMaxNodes cfg pop'
+        st',pop''
 
+    ///ordering of KS from most exploitative to explorative
+    let defaultKSOrder = 
+        [|
+            Situational  //toggle connection   ///  exploitative to explorative order
+            Normative    //evolve parms
+            Historical   //add connection
+            Topgraphical //graph union
+            Domain       //add new node
+        |]
+
+    ///cache range for scaling
     let ksRange = (0.0, defaultKSOrder.Length - 1 |> float)
 
-    let fitnessById (i:Individual) = i.Id, i.Fitness
-                           
+    ///check if competitive or cooperative phase                      
     let isCompetitiveGen st = st.ShState.GensSinceInit > st.ShState.CoopGens
 
-    let distributeKnowledge ca st species pop =
-        if isCompetitiveGen st then
-            competitiveDist ca st species pop
-        else
-            cooperativeDist ca st species pop
-
+    ///distribute knowledge for competitive phase
     let competitiveDist ca st species pop = 
         let fitAtInit = st.ShState.FitnessAtInit.[species]
         let pop' =
@@ -50,10 +57,12 @@ module rec KDStagHunt =
                 GensSinceInit = 0
             }
 
-
         let st' = {st with ShState = shState'}
         st',pop'
+
+    let fitnessById (i:Individual) = i.Id, i.Fitness
                     
+    ///distribute knowledge for cooperative phase
     let cooperativeDist ca st _ (pop:Individual[]) = //assume pop is sorted in order of index
         let pop' =
             pop
@@ -76,6 +85,18 @@ module rec KDStagHunt =
                     indv)
         let st' = {st with ShState = {st.ShState with GensSinceInit=st.ShState.GensSinceInit+1}}
         st',pop'
+
+    /// if an individual has Domain KS but has reached
+    /// max nodes then switch KS 
+    //(Domain adds new nodes which can't be done for such indviduals)
+    let adjustForMaxNodes cfg (pop:Individual[]) =
+        pop |> Array.map(fun indv -> 
+            if indv.Graph.Nodes.Count >= cfg.MaxNodes && indv.KS = Domain then  
+                //can't add any more nodes so chose another KS
+                {indv with KS = CAUtils.randKS (Some Domain)}
+            else
+                indv)
+
 
 
        

@@ -4,11 +4,11 @@ type Node = {Id:Id; Type:NodeType}
 type Id = Id of string
 type NodeType = Cell of Cell | Output of Dense | Input
 type Conn = {On:bool; From:Id; To:Id; Innovation:int}
+type NormalizationType = BatchNorm | LayerNorm
 type Cell = 
     | ModuleSpecies of int 
     | Dense of Dense
-    | BatchNorm
-    | LayerNorm
+    | Norm of NormalizationType
     | SubGraph of Graph
 type Dense = {Dims:int; Bias:bool; Activation:Activation}
 type Activation = NONE | Elu | Relu | LeakyRelu | Sig

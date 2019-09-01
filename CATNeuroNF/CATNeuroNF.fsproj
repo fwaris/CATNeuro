@@ -57,7 +57,6 @@
     <Compile Include="CA\KS\SituationalKS.fs" />
     <Compile Include="CA\BeliefSpace.fs" />
     <Compile Include="CA\CARunner.fs" />
-    <Compile Include="CA\NormativeKS.fs" />
     <Content Include="Docs\NeuroEvolution.txt" />
     <None Include="Tests\References.fsx" />
     <None Include="Tests\SetEnv.fsx" />
