@@ -3,7 +3,7 @@ open Probability
 open Ext
 open BeliefSpace
 
-type TimeStep= {CA:CA ; Best:NetworkAssembly[]; Count:int; State:CAState}
+type TimeStep= {CA:CA ; Best:NetworkAssembly[]; Count:int; State:Map<SpeciesType,CAState>}
 
 module rec CARunner =
     let isBlueprint = function Blueprint _  -> true | _ -> false 
@@ -87,12 +87,14 @@ module rec CARunner =
 
 
     ///step through CA for each population
-    let stepPopulations (st:CAState) (ca:CA) = 
+    let stepPopulations (st:Map<SpeciesType,CAState>) (ca:CA) = 
         let (st',pop') =
             ((st,[]),ca.Populations)
             ||> Array.fold (fun (st,acc) pop -> 
                 let topP = acceptance ca st  pop
-                let st',pop' = influence ca st topP pop
+                let popSt = st.[pop.Species]
+                let popSt',pop' = influence ca popSt topP pop
+                let st' = st |> Map.add pop.Species popSt'
                 st',pop'::acc)
         (st',{ca with Populations=pop' |> List.toArray})
     

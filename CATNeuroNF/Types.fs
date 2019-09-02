@@ -2,15 +2,16 @@
 
 type Node = {Id:Id; Type:NodeType}
 type Id = Id of string
-type NodeType = Cell of Cell | Output of Dense | Input
+type NodeType = Cell of CellType | Output of Dense | Input
 type Conn = {On:bool; From:Id; To:Id; Innovation:int}
 type NormalizationType = BatchNorm | LayerNorm
-type Cell = 
+type CellType = 
     | ModuleSpecies of int 
     | Dense of Dense
     | Norm of NormalizationType
     | SubGraph of Graph
-type Dense = {Dims:int; Bias:bool; Activation:Activation}
+type Bias = On | Off
+type Dense = {Dims:int; Bias:Bias; Activation:Activation}
 type Activation = NONE | Elu | Relu | LeakyRelu | Sig
 type LearningParms = {Rate:float;} with static member Default = {Rate=0.01}
 type Graph = {Nodes:Map<Id,Node>; Conns:Conn list}

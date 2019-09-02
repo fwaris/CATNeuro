@@ -8,11 +8,7 @@ module rec TopographicKS =
             Graph = indv.Graph |> GraphOps.addNode cfg
         }
         
-
-    let influence ca st cfg topP indvs = 
-        let indvs' = indvs |> Array.map (addNode cfg)
-        st,indvs'
-
+    let influence ca cfg speciesType st  (topP:Individual[]) (indvs:Individual[]) = st,indvs
 
 (*
 Topopgraphic keeps clusters of best performers

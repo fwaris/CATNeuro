@@ -1,9 +1,11 @@
 ﻿namespace CATNeuro
+//internal state and ops to run CA 
 open Probability
-//internal state to run CA 
+open FSharp.Reflection
+
 type ShState = 
     {
-        FitnessAtInit   : Map<SpeciesType,Map<int,float[]>>
+        FitnessAtInit   : Map<int,float[]>
         GensSinceInit   : int
         CoopGens        : int
     }
@@ -11,8 +13,28 @@ type ShState =
 type HsState = {Events:Individual list; Window:int}
 
 type DmState = {EliteFrac:float; NormNodeProb:float}
- 
-type CAState = {ShState:ShState; Gen:int; HsState:HsState; DmState:DmState}
+
+type CaseWheel = (UnionCaseInfo*float)[]
+type IntWheel = (int*float)[]
+type ParmType = PDims | PActivation | PBias | PSpecies | PNorm
+type DistVal = Case of UnionCaseInfo | Cont of float | Class of int
+type Dist = Cases of CaseWheel | Density of float[] | Classes of IntWheel
+
+type NmState =
+    {
+        TopIndv : Individual[]
+        MaxIndv : int
+        Norms   : Map<int,Map<ParmType,Dist>> //norms organized by innovation#
+    }
+
+type CAState = 
+    {
+        Gen     : int
+        ShState : ShState
+        HsState : HsState
+        DmState : DmState
+        NmState : NmState
+    }
 
 module CAUtils =
 

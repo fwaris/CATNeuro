@@ -15,29 +15,32 @@ module rec BeliefSpace =
     
     ///CA influence function
     let influence ca st topP pop =
-        let st',indvs' = distributeKnowledge ca st pop.Cfg pop.Species pop.Individuals
+        let st',indvs' = distributeKnowledge ca pop.Cfg pop.Species st pop.Individuals
         let indvKs = indvs' |> Array.groupBy (fun k->k.KS)
+        let speciesType = pop.Species
+        let cfg = pop.Cfg
 
         let (st'',indvs'') =
             ((st',[]),indvKs) 
             ||> Array.fold (fun (st,acc) (ks,indvs) ->
                 let st',indvs' =
                     match ks with 
-                    | Domain        -> domainInfluence      ca st pop.Cfg topP indvs
-                    | Situational   -> situationalInfluence ca st pop.Cfg topP indvs
-                    | Topgraphical  -> topoInfluence        ca st pop.Cfg topP indvs
-                    | Historical    -> historicalInfluence  ca st pop.Cfg topP indvs
-                    | Normative     -> normativeInfluence   ca st pop.Cfg topP indvs
+                    | Domain        -> domainInfluence      ca cfg speciesType st topP indvs
+                    | Situational   -> situationalInfluence ca cfg speciesType st topP indvs
+                    | Topgraphical  -> topoInfluence        ca cfg speciesType st topP indvs
+                    | Historical    -> historicalInfluence  ca cfg speciesType st topP indvs
+                    | Normative     -> normativeInfluence   ca cfg speciesType st topP indvs
                 st',indvs'::acc)
             
         let indvs''' = Seq.collect yourself indvs'' |> Seq.sortBy (fun (i:Individual)->i.Id) |> Seq.toArray
         st'',{pop with Individuals=indvs'''}
 
-    let distributeKnowledge  = KDStagHunt.distributeKnowledge
 
-    let domainInfluence         ca st cfg topP indvs = st,indvs
-    let situationalInfluence    ca st cfg topP indvs = st,indvs
-    let topoInfluence           ca st cfg topP indvs = st,indvs
-    let historicalInfluence     ca st cfg topP indvs = st,indvs
-    let normativeInfluence      ca st cfg topP indvs = st,indvs
+    //bindings to implementation
+    let distributeKnowledge     = KDStagHunt.distributeKnowledge
+    let domainInfluence         = DomainKS.influence
+    let situationalInfluence    = SituationalKS.influence
+    let topoInfluence           = TopographicKS.influence
+    let historicalInfluence     = HistoryKS.influence
+    let normativeInfluence      = NormativeKS.influence
 

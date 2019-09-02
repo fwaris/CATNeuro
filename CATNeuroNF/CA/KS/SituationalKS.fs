@@ -1,18 +1,16 @@
 ﻿namespace CATNeuro
 open Ext
 
-module rec SitutionalKS = 
+module rec SituationalKS = 
 
     let addNode cfg (indv:Individual) = 
         { indv with
             Graph = indv.Graph |> GraphOps.addNode cfg
         }
-        
 
-    let influence ca st cfg topP indvs = 
-        let indvs' = indvs |> Array.map (addNode cfg)
-        st,indvs'
 
+    let influence ca cfg speciesType st  (topP:Individual[]) (indvs:Individual[]) = st,indvs
+    
 
 (*
 Situational tracks examplars 

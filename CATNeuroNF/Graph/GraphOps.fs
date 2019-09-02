@@ -28,7 +28,7 @@ module rec GraphOps =
     ///generate a new dense cell
     let genDenseCell cfg =
         let dims = RNG.Value.Next(cfg.DenseRange.Lo, cfg.DenseRange.Hi)
-        let bias = RNG.Value.NextDouble() > 0.25
+        let bias = if RNG.Value.NextDouble() > 0.25 then On else Off
         let activation = randActivation None
         {
             Id = cfg.IdGen.node() |> Id
@@ -136,6 +136,14 @@ module rec GraphOps =
         |> List.filter (fun c -> c <> removeConn)
         |> List.append addList
         |> List.sortBy (fun c->c.Innovation)
+
+    let internalNodes (g:Graph) = 
+        g.Nodes 
+        |> Map.toSeq 
+        |> Seq.map snd 
+        |> Seq.filter (isInput>>not)
+        |> Seq.filter (isOutput>>not)
+        |> Seq.toArray      
 
     ///return a new possible random connection that does not yet exist (or None if not possible)
     let randUnconn (g:Graph) =
@@ -278,7 +286,7 @@ module rec GraphOps =
         dist / 3.0
 
     ///a measure of distance between two cells
-    let distCell (c1:Cell) (c2:Cell) =
+    let distCell (c1:CellType) (c2:CellType) =
         let W = 1.0
         match c1, c2 with
         | ModuleSpecies a, ModuleSpecies b when a = b -> 0.0

@@ -4,12 +4,16 @@ open Probability
 
 module rec DomainKS = 
 
+    ///add new node to the individual
     let addNode cfg speciesType st (indv:Individual) = 
         { indv with
-            Graph = addGraphNode cfg speciesType st indv.Graph
+            Graph = insertNode cfg speciesType st indv.Graph
         }      
 
-    let addGraphNode cfg speciesType st (g:Graph) =
+    ///insert a new node to the graph by splitting a random connection
+    ///implments rules for the node type to generate
+    ///given graph type and selected connection node types
+    let insertNode cfg speciesType st (g:Graph) =
         let conn = GraphOps.randConn g //randomly selected connection that is to be split
 
         let nodeToAdd =
@@ -26,7 +30,7 @@ module rec DomainKS =
             | Blueprint, Input                  , Cell (ModuleSpecies _)
             | Blueprint, Cell (ModuleSpecies _) , Cell (ModuleSpecies _) -> GraphOps.genBlueprintCell cfg
             //any other combination is invalid
-            | m        , f                     , t  -> failwithf "invalid connection %A %A %A" m f t
+            | m        , f                      , t  -> failwithf "invalid connection %A %A %A" m f t
 
         GraphOps.insertNode cfg g conn nodeToAdd
 
@@ -39,17 +43,7 @@ module rec DomainKS =
         else
             GraphOps.genDenseCell cfg
 
-(*
-        let newNode = genCell cfg 
-        let forwardConn = {On=true; Innovation=cfg.IdGen.conn(); From=newNode.Id; To=conn.To}
-        let backConn = {conn with To=newNode.Id; Innovation=cfg.IdGen.conn()}
-        let disConn = {conn with On=false}
-        let conns = g.Conns |> updateConns conn [backConn;forwardConn;disConn] 
-        {g with Nodes=g.Nodes |> Map.add newNode.Id newNode; Conns=conns}
- *)
-
-
-    let influece ca cfg speciesType st  (topP:Individual[]) (indvs:Individual[]) = 
+    let influence ca cfg speciesType st  (topP:Individual[]) (indvs:Individual[]) = 
         let takeNum     = (float indvs.Length) * st.DmState.EliteFrac |> int
         let byFitness   = indvs |> Array.sortBy (fun ind -> ind.Fitness.[0])
         let elites      = byFitness |> Array.take takeNum

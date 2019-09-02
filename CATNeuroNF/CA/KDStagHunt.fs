@@ -5,7 +5,7 @@ open Ext
 module rec KDStagHunt = 
 
     ///entry point for KD
-    let distributeKnowledge ca st cfg species pop =
+    let distributeKnowledge ca cfg species st pop =
         let st',pop' =
             if isCompetitiveGen st then
                 competitiveDist ca st species pop
@@ -32,7 +32,7 @@ module rec KDStagHunt =
 
     ///distribute knowledge for competitive phase
     let competitiveDist ca st species pop = 
-        let fitAtInit = st.ShState.FitnessAtInit.[species]
+        let fitAtInit = st.ShState.FitnessAtInit
         let pop' =
             pop
             |> Array.map (fun indv ->
@@ -53,7 +53,7 @@ module rec KDStagHunt =
 
         let shState' = 
             {st.ShState with 
-                FitnessAtInit = st.ShState.FitnessAtInit |> Map.add species fitAtInit'
+                FitnessAtInit = fitAtInit'
                 GensSinceInit = 0
             }
 
