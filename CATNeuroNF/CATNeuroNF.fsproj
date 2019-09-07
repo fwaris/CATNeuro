@@ -43,8 +43,9 @@
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Extensions.fs" />
     <Compile Include="Probability.fs" />
+    <Compile Include="KMeans.fs" />
+    <Compile Include="Extensions.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="Graph\GraphOps.fs" />
     <Compile Include="Graph\GraphDiag.fs" />
@@ -53,8 +54,8 @@
     <Compile Include="CA\KS\DomainKS.fs" />
     <Compile Include="CA\KS\NormativeKS.fs" />
     <Compile Include="CA\KS\HistoryKS.fs" />
-    <Compile Include="CA\KS\TopographicKS.fs" />
     <Compile Include="CA\KS\SituationalKS.fs" />
+    <Compile Include="CA\KS\TopographicKS.fs" />
     <Compile Include="CA\BeliefSpace.fs" />
     <Compile Include="CA\CARunner.fs" />
     <Content Include="Docs\NeuroEvolution.txt" />

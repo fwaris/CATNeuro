@@ -42,7 +42,7 @@ type Cfg =
                                 LearnRange={Lo=0.01; Hi=0.1}
                                 MaxNodes=10;}
 
-type Knowledge       = Situational | Historical | Normative | Topgraphical | Domain 
+type Knowledge  = Situational | Historical | Normative | Topgraphical | Domain 
 type Individual = {Fitness:float[]; Graph:Graph; Id:int; IndvType:IndvidualType; KS : Knowledge}
 type Population = {Species:SpeciesType; Individuals:Individual[]; Cfg:Cfg}
 

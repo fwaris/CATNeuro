@@ -3,6 +3,8 @@ open Ext
 open Probability
 
 module rec DomainKS = 
+    let acceptance ca cfg species (st,topG) =
+        (st,topG)
 
     ///add new node to the individual
     let addNode cfg speciesType st (indv:Individual) = 

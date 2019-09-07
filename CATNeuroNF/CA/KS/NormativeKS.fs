@@ -4,13 +4,16 @@ open FSharp.Reflection
 open Probability
 
 module rec NormativeKS =         
+    let acceptance ca cfg species (st,topG) =
+        let nmst = st.NmState
+        let nmst' = updateState nmst topG
+        let st' = {st with NmState=nmst'}
+        (st',topG)
 
     let influence ca cfg speciesType st  (topP:Individual[]) (indvs:Individual[]) = 
         let nmst = st.NmState
-        let nmst' = updateState nmst topP
-        let indvs' = indvs |> Array.map (influenceIndv nmst')
-        let st' = {st with NmState = nmst'}
-        st',indvs'
+        let indvs' = indvs |> Array.map (influenceIndv nmst)
+        st,indvs'
 
     let updateState st topP =
         //new high perf indvs

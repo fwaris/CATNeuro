@@ -27,6 +27,20 @@ type NmState =
         Norms   : Map<int,Map<ParmType,Dist>> //norms organized by innovation#
     }
 
+type Centroid =
+    {
+        Center  : Individual
+        Count   : int
+        Best    : Individual
+    }
+
+type TpState = 
+    {
+        Centroids : Centroid list
+        CIndvs    : Individual[]
+        spinWheel : (Centroid*float)[]
+    }
+
 type CAState = 
     {
         Gen     : int
@@ -34,16 +48,24 @@ type CAState =
         HsState : HsState
         DmState : DmState
         NmState : NmState
+        TpState : TpState
     }
 
 module CAUtils =
 
+    ///select a random Knowledge, excluding 'ex' if given
     let randKS (ex:Knowledge option) : Knowledge = 
         let kss = FSharp.Reflection.FSharpType.GetUnionCases(typeof<Knowledge>)
         let exVal = ex |> Option.map (fun a-> FSharp.Reflection.FSharpValue.GetUnionFields(a,typeof<Knowledge>) |> fst) 
         let kss = exVal |> Option.map (fun x -> kss |> Array.filter (fun y-> x=y |> not)) |> Option.defaultValue kss
         let ks = kss.[RNG.Value.Next(kss.Length)]
         FSharp.Reflection.FSharpValue.MakeUnion(ks,[||]) :?> _
-        
+
+    ///pareto rank the given individuals using the CA pareto-rank function
+    let rankIndvs  (ca:CA) (indvs:Individual[]) =
+        let map = indvs |> Array.map (fun i -> i.Id,i) |> Map.ofArray
+        let ids = indvs |> Array.map (fun i -> i.Id,i.Fitness)
+        let rIds = ca.ParetoRank ids
+        rIds |> Array.map (fun i -> map.[i])
 
 

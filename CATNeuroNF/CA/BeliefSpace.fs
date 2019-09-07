@@ -2,6 +2,21 @@
 open Ext
 
 module rec BeliefSpace =
+    //bindings to implementation
+    let distributeKnowledge     = KDStagHunt.distributeKnowledge
+
+    let domainInfluence         = DomainKS.influence
+    let situationalInfluence    = SituationalKS.influence
+    let topoInfluence           = TopographicKS.influence
+    let historicalInfluence     = HistoryKS.influence
+    let normativeInfluence      = NormativeKS.influence
+
+    let domainAcceptance        = DomainKS.acceptance
+    let situationalIAcceptance  = SituationalKS.acceptance
+    let topoAcceptance          = TopographicKS.acceptance
+    let historicalAcceptance    = HistoryKS.acceptance
+    let normativeAcceptance     = NormativeKS.acceptance
+
 
     /// CA acceptance function
     let acceptance ca st pop = 
@@ -11,8 +26,16 @@ module rec BeliefSpace =
             ca.ParetoRank (pop.Individuals |> Array.map (fun ind->ind.Id,ind.Fitness)) 
             |> Array.map (fun id -> indvMap.[id])
 
-        pareto |> Array.take ((float pareto.Length) * ca.Settings.TakeFraction |> int)        
-    
+        let topG = pareto |> Array.take ((float pareto.Length) * ca.Settings.TakeFraction |> int)        
+
+        //thread state & top indvs through acceptance
+        (st,topG)
+        |> situationalIAcceptance ca pop.Cfg pop.Species
+        |> historicalAcceptance ca pop.Cfg pop.Species
+        |> domainAcceptance ca pop.Cfg pop.Species
+        |> normativeAcceptance ca pop.Cfg pop.Species
+        |> topoAcceptance ca pop.Cfg pop.Species
+
     ///CA influence function
     let influence ca st topP pop =
         let st',indvs' = distributeKnowledge ca pop.Cfg pop.Species st pop.Individuals
@@ -36,11 +59,4 @@ module rec BeliefSpace =
         st'',{pop with Individuals=indvs'''}
 
 
-    //bindings to implementation
-    let distributeKnowledge     = KDStagHunt.distributeKnowledge
-    let domainInfluence         = DomainKS.influence
-    let situationalInfluence    = SituationalKS.influence
-    let topoInfluence           = TopographicKS.influence
-    let historicalInfluence     = HistoryKS.influence
-    let normativeInfluence      = NormativeKS.influence
 

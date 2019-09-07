@@ -2,6 +2,8 @@
 open Ext
 
 module rec SituationalKS = 
+    let acceptance ca cfg species (st,topG) =
+        (st,topG)
 
     let addNode cfg (indv:Individual) = 
         { indv with
