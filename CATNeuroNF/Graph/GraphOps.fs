@@ -5,6 +5,8 @@ module rec GraphOps =
     let isInput (n:Node) = match n.Type with Input  -> true | _ -> false
     let isOutput (n:Node) = match n.Type with Output _ -> true | _ -> false
 
+    let randBias() = if RNG.Value.NextDouble() < 0.5 then Bias.On else Bias.Off
+
     ///select a random activation excluding 'ex' if provided
     let randActivation (ex:Activation option) : Activation =
         let activations = FSharp.Reflection.FSharpType.GetUnionCases(typeof<Activation>)
@@ -24,6 +26,8 @@ module rec GraphOps =
             else
                 norms.[RNG.Value.Next(norms.Length)]
         FSharp.Reflection.FSharpValue.MakeUnion(sel,[||]) :?> _    
+
+    let randDims cfg = RNG.Value.Next(cfg.DenseRange.Lo, cfg.DenseRange.Hi) |> int
 
     ///generate a new dense cell
     let genDenseCell cfg =

@@ -2,6 +2,7 @@
 //internal state and ops to run CA 
 open Probability
 open FSharp.Reflection
+open MathNet.Numerics.Statistics
 
 type ShState = 
     {
@@ -17,7 +18,8 @@ type DmState = {EliteFrac:float; NormNodeProb:float}
 type CaseWheel = (UnionCaseInfo*float)[]
 type IntWheel = (int*float)[]
 type ParmType = PDims | PActivation | PBias | PSpecies | PNorm
-type DistVal = Case of UnionCaseInfo | Cont of float | Class of int
+type ClassInfo = {TotalClasses:int; Refs:int list}
+type DistVal = Case of UnionCaseInfo | Cont of float | Class of ClassInfo
 type Dist = Cases of CaseWheel | Density of float[] | Classes of IntWheel
 
 type NmState =
@@ -67,5 +69,17 @@ module CAUtils =
         let ids = indvs |> Array.map (fun i -> i.Id,i.Fitness)
         let rIds = ca.ParetoRank ids
         rIds |> Array.map (fun i -> map.[i])
+
+    ///choose a species at random
+    let randSpecies numSpecies = RNG.Value.Next(numSpecies)
+
+    ///sample from kernel density estimate
+    //https://stats.stackexchange.com/questions/321542/how-can-i-draw-a-value-randomly-from-a-kernel-density-estimate
+    let sampleDensity bandwidth (mass:float[]) =  
+        let n = mass.[RNG.Value.Next(mass.Length)]
+        let k = GAUSS 0.0 bandwidth
+        n + k
+        
+
 
 

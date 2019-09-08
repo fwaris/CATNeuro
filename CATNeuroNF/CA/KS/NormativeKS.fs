@@ -6,16 +6,26 @@ open Probability
 module rec NormativeKS =         
     let acceptance ca cfg species (st,topG) =
         let nmst = st.NmState
-        let nmst' = updateState nmst topG
+        let nmst' = updateState cfg nmst topG
         let st' = {st with NmState=nmst'}
         (st',topG)
 
     let influence ca cfg speciesType st  (topP:Individual[]) (indvs:Individual[]) = 
         let nmst = st.NmState
-        let indvs' = indvs |> Array.map (influenceIndv nmst)
+        let indvs' = indvs |> Array.map (influenceIndv cfg nmst)
         st,indvs'
 
-    let updateState st topP =
+    let influenceIndv cfg nmst indv =
+        let nodes' = 
+            indv.Graph.Conns
+            |> Seq.map (fun c -> c.Innovation, indv.Graph.Nodes.[c.To])
+            |> Seq.choose (fun (innovNum,n) -> nmst.Norms |> Map.tryFind innovNum |> Option.map (fun pm->innovNum,n,pm))
+            |> Seq.map (fun (i,n,pm) -> updateNode cfg n pm)
+        let gNodes = (indv.Graph.Nodes,nodes') ||> Seq.fold (fun acc n -> acc |> Map.add n.Id n)
+        let g = {indv.Graph with Nodes=gNodes}
+        {indv with Graph=g}
+
+    let updateState cfg st topP =
         //new high perf indvs
         let highPerf = 
             Array.append topP st.TopIndv 
@@ -26,15 +36,15 @@ module rec NormativeKS =
         let norms =
             highPerf
             |> Seq.collect (fun indv -> indv.Graph.Conns 
-                                        |> List.map (fun c->c.Innovation, indv.Graph.Nodes.[c.To].Type))
-            |> Seq.choose (fun (i,n) -> match n with Cell c -> Some (i,c) | _ -> None)
-            |> Seq.collect (fun (i,n) -> nodeParms n |> List.map (fun (p,d) -> (i,p),d))
-            |> Seq.groupBy fst
-            |> Seq.map (fun ((i,p),xs) -> i,p, xs |> Seq.map snd |> Seq.toList |> aggregateParms)
-            |> Seq.choose (fun (i,p,agg) -> agg |> Option.map(fun agg -> i,(p,agg)))
-            |> Seq.groupBy fst
-            |> Seq.map (fun (i,xs) -> i, xs |> Seq.map snd |> Map.ofSeq)            
-            |> Map.ofSeq
+                                        |> List.map (fun c->c.Innovation, indv.Graph.Nodes.[c.To].Type))  //innov#, nodeType
+            |> Seq.choose (fun (i,n) -> match n with Cell c -> Some (i,c) | _ -> None)                    //cells
+            |> Seq.collect (fun (i,n) -> nodeParms cfg n |> List.map (fun (p,d) -> (i,p),d))              //extract parms from cells
+            |> Seq.groupBy fst                                                                            //group by innov#
+            |> Seq.map (fun ((i,p),xs) -> i,p, xs |> Seq.map snd |> Seq.toList |> aggregateParms)         //aggregate group to get parm distributions
+            |> Seq.choose (fun (i,p,agg) -> agg |> Option.map(fun agg -> i,(p,agg)))                      //filter None
+            |> Seq.groupBy fst                                                                            //re-group by innov# 
+            |> Seq.map (fun (i,xs) -> i, xs |> Seq.map snd |> Map.ofSeq)                                  //innov# * (parmType->distribution) map
+            |> Map.ofSeq                                                                                  //map with innov# as key
         {st with Norms=norms}
 
     let mass        = function Density fs  -> fs  | _ -> failwith "density expected"
@@ -43,41 +53,55 @@ module rec NormativeKS =
 
     let reify<'a> v = FSharpValue.MakeUnion(v,[||]) :?> 'a
 
-    let updateNode n (pm:Map<ParmType,Dist>) =
+    let updateNode cfg n (pm:Map<ParmType,Dist>) : Node =
         let ty =
             match n.Type with
             | Cell (Dense d) -> 
-                let dims = pm |> Map.tryFind PDims |> Option.map mass
-                let acts = pm |> Map.tryFind PActivation |> Option.map caseWheel
-                let bias = pm |> Map.tryFind PBias |> Option.map caseWheel
-                let d = dims |> Option.fold (fun d fs -> {d with Dims=int fs.[0]}) d
-                let d = acts |> Option.fold (fun d whl -> {d with Activation = spinWheel whl |> reify} ) d
-                let d = bias |> Option.fold (fun d whl -> {d with Bias=spinWheel whl |> reify}) d
-                Dense d
+                let dims = 
+                    pm 
+                    |> Map.tryFind PDims 
+                    |> Option.map mass  
+                    |> Option.map (CAUtils.sampleDensity 3.0 >> int)   //sample from kernel density estimate
+                    |> Option.defaultValue (GraphOps.randDims cfg)     //sample from uniform, if None
+
+                let acts = 
+                    pm 
+                    |> Map.tryFind PActivation 
+                    |> Option.map caseWheel
+                    |> Option.map (spinWheel >> reify)                       //sample from dist
+                    |> Option.defaultValue (GraphOps.randActivation None)    //random, if None
+
+
+                let bias = 
+                    pm 
+                    |> Map.tryFind PBias 
+                    |> Option.map caseWheel
+                    |> Option.map (spinWheel >> reify)                      //sample from dist
+                    |> Option.defaultValue (GraphOps.randBias())            //random, if None
+
+                let d' = {d with Dims=dims; Activation=acts; Bias=bias}
+                Dense d'
+
             | Cell (ModuleSpecies s ) -> 
                 pm 
                 |> Map.tryFind PSpecies 
                 |> Option.map classWheel
-                |> Option.fold (fun m w -> spinWheel w |> ModuleSpecies) (ModuleSpecies s)
+                |> Option.map (fun w -> spinWheel w |> ModuleSpecies)                            //sample from dist
+                |> Option.defaultValue (cfg.NumSpecies |> CAUtils.randSpecies |> ModuleSpecies)  //random, if None
+
             | Cell (Norm nt) ->
                 pm 
                 |> Map.tryFind PNorm 
                 |> Option.map caseWheel
-                |> Option.fold (fun n w -> spinWheel w |> reify |> Norm) (Norm nt)
+                |> Option.map (fun w -> spinWheel w |> reify |> Norm)                            //sample from dist
+                |> Option.defaultValue (GraphOps.randNormalization (Some nt) |> Norm)            //random, if None
+
             | x -> failwithf "case not handled %A" x
         {n with Type = Cell ty}
 
-    let influenceIndv nmst indv =
-        let nodes' = 
-            indv.Graph.Conns
-            |> Seq.map (fun c -> c.Innovation, indv.Graph.Nodes.[c.To])
-            |> Seq.choose (fun (i,n) -> nmst.Norms |> Map.tryFind i |> Option.map (fun pm->i,n,pm))
-            |> Seq.map (fun (i,n,pm) -> updateNode n pm)
-        let gNodes = (indv.Graph.Nodes,nodes') ||> Seq.fold (fun acc n -> acc |> Map.add n.Id n)
-        let g = {indv.Graph with Nodes=gNodes}
-        {indv with Graph=g}
-
-    let nodeParms = function
+    ///pattern match cell type to 
+    ///extract named parameters
+    let nodeParms cfg = function
         | Dense d -> 
             [
                 PDims       , Cont (float d.Dims)
@@ -86,7 +110,7 @@ module rec NormativeKS =
             ]
         | ModuleSpecies s ->
             [
-                PSpecies    , Class s
+                PSpecies    , Class {TotalClasses=cfg.NumSpecies; Refs=[s]}
             ]
         | Norm l ->
             [
@@ -95,9 +119,37 @@ module rec NormativeKS =
         | _      -> printfn "unexpected node type"; []
 
     let cases xs   = xs |> List.map (function Case u  -> u | _ -> failwith "not expected")
-    let classes xs = xs |> List.map (function Class c -> c | _ -> failwith "not expected")
     let conts xs   = xs |> List.map (function Cont f  -> f | _ -> failwith "not expected")
 
+    let classes xs = 
+        xs 
+        |> List.collect (function Class c -> c.Refs |> List.map (fun r->c.TotalClasses,r) | _ -> failwith "not expected")
+        |> List.groupBy fst
+        |> List.map(fun (k,xs) -> {TotalClasses=k; Refs=xs |> List.map snd})
+        |> List.head
+
+
+    ///keep non-zero prob for all available options
+    let completeCases (xs:(UnionCaseInfo*float) list)= 
+        let uc,_ = xs.[0]
+        let usc = xs |> List.map fst |> List.map(fun u->u.Name) |> set
+        let allucs = FSharp.Reflection.FSharpType.GetUnionCases(uc.DeclaringType)
+        let missingUcs = allucs |> Array.filter (fun x->usc.Contains x.Name |> not) |> Array.toList
+        let mws = missingUcs |> List.map (fun x -> x, 0.01)
+        List.append xs mws
+
+    ///keep non-zero prob for all available options
+    let completeClasses ci = 
+        let allClasses = [for i in 0..ci.TotalClasses-1 -> i] 
+        let weights = ci.Refs |> List.countBy yourself |> List.map (fun (x,c)->x,float c)
+        let refCls = ci.Refs |> set
+        let missingCs = allClasses |> List.filter (fun c -> refCls.Contains c |> not)
+        let msw = missingCs |> List.map (fun x -> x, 0.01)
+        List.append weights msw 
+
+    ///aggregate list of parameter values. 
+    ///each element of the list is expected to be of the same type
+    //the form of 'aggregation' is dependent on the parameter type
     let aggregateParms xs =
         match xs with
         | []            ->  None
@@ -105,20 +157,20 @@ module rec NormativeKS =
                             |> cases 
                             |> List.countBy yourself 
                             |> List.map (fun (x,c)->x,float c) 
+                            |> completeCases
                             |> List.toArray
-                            |> createWheel 
+                            |> createWheel          //create prob. 'wheel' for cases
                             |> snd
                             |> Cases |> Some
         | Cont _::_     ->  xs 
                             |> conts 
                             |> List.toArray 
-                            |> Density |> Some
+                            |> Density |> Some      //create list for kernel density sampling
         | Class _::_    ->  xs 
                             |> classes
-                            |> List.countBy yourself
-                            |> List.map (fun (x,c)->x,float c)
+                            |> completeClasses
                             |> List.toArray
-                            |> createWheel
+                            |> createWheel          //create prob. 'wheel' for classes 
                             |> snd
                             |> Classes |> Some
                 
