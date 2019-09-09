@@ -2,9 +2,9 @@
 open Probability
 
 module rec HistoryKS = 
-    let acceptance ca cfg species (st,topG) =
+    let acceptance ca cfg species (st,topG:Individual[]) =
         let hsst = st.HsState
-        let hsst' = updateState hsst topG
+        let hsst' = updateState ca hsst topG
         let st' = {st with HsState=hsst'}
         (st',topG)
 
@@ -19,13 +19,13 @@ module rec HistoryKS =
         else
             {indv with Graph=GraphOps.toggleConnection cfg rndIndv.Graph}
 
-    let updateState hsst topP =
-        let cndateBest = topP |> Array.sortBy (fun indv->indv.Fitness.[0]) |> Array.head
+    let updateState ca hsst topP =
+        let cndateBest = CAUtils.rankIndvs ca topP |> Array.head
         let newBest = 
             match hsst.Events with 
             | []                                               -> [cndateBest] //no history
             | x::_ when cndateBest.Fitness.[0] < x.Fitness.[0] -> [cndateBest] //cndt is better
-            | _                                                -> []
+            | _                                                -> []           //cndt is not better than prev best
         let events = List.append newBest hsst.Events |> List.truncate hsst.Window
         {hsst with Events=events}
 

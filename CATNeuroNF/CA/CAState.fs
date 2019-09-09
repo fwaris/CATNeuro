@@ -14,6 +14,7 @@ type ShState =
 type HsState = {Events:Individual list; Window:int}
 
 type DmState = {EliteFrac:float; NormNodeProb:float}
+type SiState = {Exemplars:Individual[]; SpinWheel:(Graph*float)[]}
 
 type CaseWheel = (UnionCaseInfo*float)[]
 type IntWheel = (int*float)[]
@@ -40,7 +41,7 @@ type TpState =
     {
         Centroids : Centroid list
         CIndvs    : Individual[]
-        spinWheel : (Centroid*float)[]
+        SpinWheel : (Centroid*float)[]
     }
 
 type CAState = 
@@ -51,6 +52,7 @@ type CAState =
         DmState : DmState
         NmState : NmState
         TpState : TpState
+        SiState : SiState
     }
 
 module CAUtils =
@@ -64,9 +66,9 @@ module CAUtils =
         FSharp.Reflection.FSharpValue.MakeUnion(ks,[||]) :?> _
 
     ///pareto rank the given individuals using the CA pareto-rank function
-    let rankIndvs  (ca:CA) (indvs:Individual[]) =
-        let map = indvs |> Array.map (fun i -> i.Id,i) |> Map.ofArray
-        let ids = indvs |> Array.map (fun i -> i.Id,i.Fitness)
+    let rankIndvs  (ca:CA) (indvs:Individual seq) =
+        let map = indvs |> Seq.map (fun i -> i.Id,i) |> Map.ofSeq
+        let ids = indvs |> Seq.map (fun i -> i.Id,i.Fitness) |> Seq.toArray
         let rIds = ca.ParetoRank ids
         rIds |> Array.map (fun i -> map.[i])
 

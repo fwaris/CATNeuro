@@ -87,14 +87,14 @@ module rec CARunner =
 
 
     ///step through CA for each population
-    let stepPopulations (st:Map<SpeciesType,CAState>) (ca:CA) = 
+    let stepPopulations  (st:Map<SpeciesType,CAState>) (ca:CA) = 
         let (st',pop') =
             ((st,[]),ca.Populations)
             ||> Array.fold (fun (st,acc) pop -> 
-                let topP = acceptance ca st  pop
                 let popSt = st.[pop.Species]
-                let popSt',pop' = influence ca popSt topP pop
-                let st' = st |> Map.add pop.Species popSt'
+                let popSt',topG = acceptance ca popSt pop
+                let popSt'',pop' = influence ca popSt' topG pop
+                let st' = st |> Map.add pop.Species popSt''
                 st',pop'::acc)
         (st',{ca with Populations=pop' |> List.toArray})
     

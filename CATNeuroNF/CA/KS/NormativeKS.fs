@@ -6,7 +6,7 @@ open Probability
 module rec NormativeKS =         
     let acceptance ca cfg species (st,topG) =
         let nmst = st.NmState
-        let nmst' = updateState cfg nmst topG
+        let nmst' = updateState ca cfg nmst topG
         let st' = {st with NmState=nmst'}
         (st',topG)
 
@@ -25,11 +25,11 @@ module rec NormativeKS =
         let g = {indv.Graph with Nodes=gNodes}
         {indv with Graph=g}
 
-    let updateState cfg st topP =
+    let updateState ca cfg st (topP:Individual[]) =
         //new high perf indvs
         let highPerf = 
             Array.append topP st.TopIndv 
-            |> Array.sortBy (fun x -> x.Fitness.[0])
+            |> CAUtils.rankIndvs ca 
             |> Array.truncate st.MaxIndv
 
         //extract norms by innovation #
@@ -53,6 +53,9 @@ module rec NormativeKS =
 
     let reify<'a> v = FSharpValue.MakeUnion(v,[||]) :?> 'a
 
+    ///update parameters of the given node by following the 'norms' 
+    ///of the best indviduals in the population
+    ///each node type and all of its 'named' parameters are considered here
     let updateNode cfg n (pm:Map<ParmType,Dist>) : Node =
         let ty =
             match n.Type with
@@ -61,6 +64,7 @@ module rec NormativeKS =
                     pm 
                     |> Map.tryFind PDims 
                     |> Option.map mass  
+                    |> Option.bind (fun xs->if xs.Length >= 2 then Some(xs) else None) //don't use distribution if only 1 point in set
                     |> Option.map (CAUtils.sampleDensity 3.0 >> int)   //sample from kernel density estimate
                     |> Option.defaultValue (GraphOps.randDims cfg)     //sample from uniform, if None
 

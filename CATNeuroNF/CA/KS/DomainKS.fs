@@ -6,6 +6,21 @@ module rec DomainKS =
     let acceptance ca cfg species (st,topG) =
         (st,topG)
 
+    let influence ca cfg speciesType st  (topP:Individual[]) (indvs:Individual[]) = 
+        let takeNum     = (float indvs.Length) * st.DmState.EliteFrac |> int
+        let byFitness   = CAUtils.rankIndvs ca indvs // pareto rank individuals|> Array.sortBy (fun ind -> ind.Fitness.[0])
+        let elites      = byFitness |> Array.take takeNum
+        let toReplace   = byFitness |> Array.skip takeNum
+        let elites'     = elites |> Array.map (addNode cfg speciesType st)
+
+        let reps' = toReplace |> Array.map (fun indv ->
+            let rnd = topP |> Array.item (RNG.Value.Next(topP.Length))
+            let g = GraphOps.addNode cfg rnd.Graph  //add node to one of the top performers and use its graph
+            {indv with Graph=g })
+
+        let indvs' = Array.append elites' reps'
+        st,indvs'
+
     ///add new node to the individual
     let addNode cfg speciesType st (indv:Individual) = 
         { indv with
@@ -45,20 +60,6 @@ module rec DomainKS =
         else
             GraphOps.genDenseCell cfg
 
-    let influence ca cfg speciesType st  (topP:Individual[]) (indvs:Individual[]) = 
-        let takeNum     = (float indvs.Length) * st.DmState.EliteFrac |> int
-        let byFitness   = indvs |> Array.sortBy (fun ind -> ind.Fitness.[0])
-        let elites      = byFitness |> Array.take takeNum
-        let toReplace   = byFitness |> Array.skip takeNum
-        let elites'     = elites |> Array.map (addNode cfg speciesType st)
-
-        let reps' = toReplace |> Array.map (fun indv ->
-            let rnd = topP |> Array.item (RNG.Value.Next(topP.Length))
-            let g = GraphOps.addNode cfg rnd.Graph  //add node to one of the top performers and use its graph
-            {indv with Graph=g })
-
-        let indvs' = Array.append elites' reps'
-        st,indvs'
 
 
 (*
