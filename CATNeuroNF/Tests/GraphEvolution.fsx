@@ -7,28 +7,28 @@ let cfg = Cfg.Default
 let p = LearningParms.Default
 
 let sampleGraph() =
-    let last = {Id=Id"out"; Type = Output {Dims = 2; Bias=false; Activation=NONE}}
+    let last = {Id=Id"out"; Type = Output {Dims = 2; Bias=Bias.Off; Activation=NONE}}
 
     let inter1 = 
                  {
                     Id = cfg.IdGen.node() |> Id
-                    Type = Cell (Dense {Dims =6; Bias=false; Activation=NONE})
+                    Type = Cell (Dense {Dims =6; Bias=Bias.Off; Activation=NONE})
                  }
 
     let inter2 = 
                 {
                    Id = cfg.IdGen.node() |> Id
-                   Type = Cell (Dense {Dims = 5; Bias=false; Activation=NONE})              
+                   Type = Cell (Dense {Dims = 5; Bias=Bias.Off; Activation=NONE})              
                 }
     let inter3 = 
                 {
                    Id = cfg.IdGen.node() |> Id
-                   Type = Cell (Dense {Dims = 7; Bias=false; Activation=NONE})               
+                   Type = Cell (Dense {Dims = 7; Bias=Bias.Off; Activation=NONE})               
                 }
     let inter4 = 
                 {
                    Id = cfg.IdGen.node() |> Id
-                   Type = Cell (Dense {Dims = 3; Bias=false; Activation=NONE})
+                   Type = Cell (Dense {Dims = 3; Bias=Bias.Off; Activation=NONE})
                 }
 
     let input1 =  {Id=Id"input1"; Type = Input }
@@ -110,6 +110,7 @@ let testCrossover() =
     let g1 = addNode cfg g
     let g2 = addNode cfg g1
     let g3 = crossover cfg g1 g2 |> addConnection cfg
+    SetEnv.showGraph "g" g
     SetEnv.showGraph "g1" g1
     SetEnv.showGraph "g2" g2
     SetEnv.showGraph "g3" g3

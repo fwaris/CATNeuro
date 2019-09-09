@@ -207,7 +207,7 @@ module rec GraphOps =
         insertNode cfg g conn newNode
 
     let insertNode cfg (g:Graph) conn (newNode:Node) =
-        if cfg.MaxNodes > g.Nodes.Count then
+        if g.Nodes.Count >= cfg.MaxNodes then
             printfn "max nodes reached"
             g
         else
