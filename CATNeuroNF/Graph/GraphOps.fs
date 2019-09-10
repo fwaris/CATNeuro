@@ -27,11 +27,11 @@ module rec GraphOps =
                 norms.[RNG.Value.Next(norms.Length)]
         FSharp.Reflection.FSharpValue.MakeUnion(sel,[||]) :?> _    
 
-    let randDims cfg = RNG.Value.Next(cfg.DenseRange.Lo, cfg.DenseRange.Hi) |> int
+    let randDims cfg = RNG.Value.Next(int cfg.DenseRange.Lo, int cfg.DenseRange.Hi) |> int
 
     ///generate a new dense cell
     let genDenseCell cfg =
-        let dims = RNG.Value.Next(cfg.DenseRange.Lo, cfg.DenseRange.Hi)
+        let dims = RNG.Value.Next(int cfg.DenseRange.Lo, int cfg.DenseRange.Hi)
         let bias = if RNG.Value.NextDouble() > 0.25 then On else Off
         let activation = randActivation None
         {
@@ -50,7 +50,7 @@ module rec GraphOps =
     ///generate a new blueprint cell
     let genBlueprintCell cfg =
         let ntype = ModuleSpecies (RNG.Value.Next(cfg.NumSpecies)) //pick a module species at random
-        let dims = RNG.Value.Next(cfg.DenseRange.Lo, cfg.DenseRange.Hi)
+        let dims = RNG.Value.Next(int cfg.DenseRange.Lo, int cfg.DenseRange.Hi)
         {
             Id = cfg.IdGen.node() |> Id
             Type =  Cell ntype
@@ -206,17 +206,6 @@ module rec GraphOps =
         let newNode = genDenseCell cfg 
         insertNode cfg g conn newNode
 
-    let insertNode cfg (g:Graph) conn (newNode:Node) =
-        if g.Nodes.Count >= cfg.MaxNodes then
-            printfn "max nodes reached"
-            g
-        else
-            let forwardConn = {On=true; Innovation=cfg.IdGen.conn(); From=newNode.Id; To=conn.To}
-            let backConn = {conn with To=newNode.Id; Innovation=cfg.IdGen.conn()}
-            let disConn = {conn with On=false}
-            let conns = g.Conns |> updateConns conn [backConn;forwardConn;disConn] 
-            {g with Nodes=g.Nodes |> Map.add newNode.Id newNode; Conns=conns}
-
     ///toggle a random connection
     let toggleConnection cfg (g:Graph) =
         let oldConn = randConnForToggle g
@@ -228,6 +217,18 @@ module rec GraphOps =
        match randUnconn g with 
        | Some (f,t) -> {g with Conns = {On=true; Innovation=cfg.IdGen.conn(); From=f; To=t}::g.Conns}
        | None       -> g
+
+    let insertNode cfg (g:Graph) conn (newNode:Node) =
+        if g.Nodes.Count >= cfg.MaxNodes then
+            printfn "max nodes reached"
+            g
+        else
+            let forwardConn = {On=true; Innovation=cfg.IdGen.conn(); From=newNode.Id; To=conn.To}
+            let backConn = {conn with To=newNode.Id; Innovation=cfg.IdGen.conn()}
+            let disConn = {conn with On=false}
+            let conns = g.Conns |> updateConns conn [backConn;forwardConn;disConn] 
+            {g with Nodes=g.Nodes |> Map.add newNode.Id newNode; Conns=conns}
+
 
     /// modify some parameter of node to be like that of the template node
     let mimicParm cfg (g:Graph) nodeId tmpltNodeId =
@@ -252,6 +253,12 @@ module rec GraphOps =
             | x -> x
 
         {g with Nodes=g.Nodes |> Map.add nodeId {na with Type=nType}}
+
+    ///mutate paramenter of a random node
+    let randMutateParm cfg (g:Graph) =       
+        let ins = internalNodes g 
+        let n = ins.[RNG.Value.Next(ins.Length)]
+        evolveParm cfg g n.Id
 
 
     ///remove dead nodes

@@ -28,7 +28,7 @@ module rec SituationalKS =
         let weights = 
             explrs
             |> Array.map (fun (indv:Individual) -> indv.Graph, indv.Fitness.[0])
-        let _,wheel = Probability.createWheel weights
+        let wheel = Probability.createWheel weights
         {sist with Exemplars=explrs; SpinWheel=wheel}
 
     ///select exemplars from existng and new elites.
@@ -68,27 +68,6 @@ module rec SituationalKS =
         best::(clct [] binned [])    
 
         
-    let makeBins (mn:float) mx bins = 
-        if mn > mx then failwith "mn > mx"
-        let r = mx - mn
-        let bw = r / bins
-        (mn,mn+bw,1) |> Seq.unfold (fun (mn,mx,c) -> 
-            if c > int bins then
-                None
-            else
-                Some ((mn,mx), (mx,mx+bw,c+1)))
-        |> Seq.toList
-
-    
-    ///round robbin collect elements in the bins
-    ///collect 1st element from 1st bin, 1st element from 2nd bin until no more bins
-    ///then repeat starting from the 1st bin and 2nd element...
-    let rec clct acc l1 l2 =
-        match l1, l2 with 
-        | [],[]             -> acc |> List.rev
-        | [],_              -> clct acc (List.rev l2) []
-        | (_,[])::rest,_    -> clct acc rest l2
-        | (b,x::r1)::rest,_ -> clct (x::acc) rest ((b,r1)::l2)
     
 
     

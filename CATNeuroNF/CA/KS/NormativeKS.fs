@@ -164,7 +164,6 @@ module rec NormativeKS =
                             |> completeCases
                             |> List.toArray
                             |> createWheel          //create prob. 'wheel' for cases
-                            |> snd
                             |> Cases |> Some
         | Cont _::_     ->  xs 
                             |> conts 
@@ -175,7 +174,6 @@ module rec NormativeKS =
                             |> completeClasses
                             |> List.toArray
                             |> createWheel          //create prob. 'wheel' for classes 
-                            |> snd
                             |> Classes |> Some
                 
 

@@ -24,43 +24,8 @@ module rec DomainKS =
     ///add new node to the individual
     let addNode cfg speciesType st (indv:Individual) = 
         { indv with
-            Graph = insertNode cfg speciesType st indv.Graph
+            Graph = CAUtils.insertNode cfg speciesType st.DmState.NormNodeProb indv.Graph
         }      
-
-    ///insert a new node to the graph by splitting a random connection
-    ///implments rules for the node type to generate
-    ///given graph type and selected connection node types
-    let insertNode cfg speciesType st (g:Graph) =
-        let conn = GraphOps.randConn g //randomly selected connection that is to be split
-
-        let nodeToAdd =
-            match speciesType, g.Nodes.[conn.From].Type, g.Nodes.[conn.To].Type with
-            //module connection
-            | Module _ , Cell(Norm _)   , _
-            | Module _ , _              , Cell (Norm _)
-            | Module _ , Input          , Output _ 
-            | Module _ , Input          , Cell (Norm _) 
-            | Module _ , Cell (Norm _)  , Output _                      -> GraphOps.genDenseCell cfg
-            | Module _ , Cell (Dense _) , Cell (Dense _)                -> denseOrNorm st cfg
-            //blueprint connection
-            | Blueprint, Cell(ModuleSpecies _)  , Output _
-            | Blueprint, Input                  , Cell (ModuleSpecies _)
-            | Blueprint, Cell (ModuleSpecies _) , Cell (ModuleSpecies _) -> GraphOps.genBlueprintCell cfg
-            //any other combination is invalid
-            | m        , f                      , t  -> failwithf "invalid connection %A %A %A" m f t
-
-        GraphOps.insertNode cfg g conn nodeToAdd
-
-     
-     ///generate dense or normalization cell
-     ///using configured probability
-    let denseOrNorm st cfg = 
-        if RNG.Value.NextDouble() <= st.DmState.NormNodeProb then 
-            GraphOps.genNormCell cfg
-        else
-            GraphOps.genDenseCell cfg
-
-
 
 (*
 domain understands the rules

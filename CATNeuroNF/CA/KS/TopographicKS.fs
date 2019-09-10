@@ -45,7 +45,7 @@ module rec TopographicKS =
             |> Seq.map (toCentroid ca) 
             |> Seq.toList
 
-        let _,wheel = cntrds |> Seq.map (fun c->c,float c.Count) |> Seq.toArray |> Probability.createWheel
+        let wheel = cntrds |> Seq.map (fun c->c,float c.Count) |> Seq.toArray |> Probability.createWheel
 
         {Centroids=cntrds; SpinWheel=wheel; CIndvs=indvs}
 

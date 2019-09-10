@@ -49,7 +49,7 @@
     <Compile Include="Types.fs" />
     <Compile Include="Graph\GraphOps.fs" />
     <Compile Include="Graph\GraphDiag.fs" />
-    <Compile Include="CA\CAState.fs" />
+    <Compile Include="CA\CAUtils.fs" />
     <Compile Include="CA\KDStagHunt.fs" />
     <Compile Include="CA\KS\DomainKS.fs" />
     <Compile Include="CA\KS\NormativeKS.fs" />
@@ -67,9 +67,6 @@
   <ItemGroup>
     <Reference Include="FSharp.Core">
       <HintPath>..\packages\FSharp.Core.4.7.0\lib\net45\FSharp.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="MathNet.Numerics">
-      <HintPath>..\packages\MathNet.Numerics.4.8.1\lib\net461\MathNet.Numerics.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Msagl">
       <HintPath>..\packages\Microsoft.Msagl.1.1.3\lib\net40\Microsoft.Msagl.dll</HintPath>
