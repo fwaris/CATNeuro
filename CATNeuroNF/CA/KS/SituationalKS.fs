@@ -28,7 +28,7 @@ module rec SituationalKS =
         let weights = 
             explrs
             |> Array.map (fun (indv:Individual) -> indv.Graph, indv.Fitness.[0])
-        let wheel = Probability.createWheel weights
+        let wheel = CATProb.createWheel weights
         {sist with Exemplars=explrs; SpinWheel=wheel}
 
     ///select exemplars from existng and new elites.

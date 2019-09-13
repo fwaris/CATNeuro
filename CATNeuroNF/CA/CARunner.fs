@@ -1,5 +1,5 @@
 ﻿namespace CATNeuro
-open Probability
+open CATProb
 open Ext
 open BeliefSpace
 
@@ -42,8 +42,9 @@ module rec CARunner =
 
         let parms = match blueprint.IndvType with BlueprintIndv p -> p | _ -> failwithf "not a blueprint indvidual"
         let assembly = blueprint.Graph |> replaceWith (selIndvs |> Map.map (fun _ x->x.Graph))
+        let assembly' = GraphOps.trimGraph assembly
         let replaceMents = selIndvs|>Map.map(fun sid ind->{SpeciesId=sid; IndvidualId=ind.Id}) |> Map.toSeq |> Seq.map snd |> Seq.toArray
-        {BlueprintId = blueprint.Id; Parms=parms; Graph=assembly; ModuleReplacements=replaceMents }
+        {BlueprintId = blueprint.Id; Parms=parms; Graph=assembly'; ModuleReplacements=replaceMents }
 
     let separatePop pops = 
         let bprints = pops |> Array.find (fun x -> isBlueprint x.Species)

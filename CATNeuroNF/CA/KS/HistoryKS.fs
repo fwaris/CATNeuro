@@ -1,5 +1,5 @@
 ﻿namespace CATNeuro
-open Probability
+open CATProb
 
 module rec HistoryKS = 
     let acceptance ca cfg species (st,topG:Individual[]) =

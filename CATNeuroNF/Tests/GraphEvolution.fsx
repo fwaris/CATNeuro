@@ -1,4 +1,4 @@
-﻿#load "SetEnv.fsx"
+﻿#load "CNSetEnv.fsx"
 open CATNeuro
 open CATNeuro.GraphDiag
 open CATNeuro.GraphOps

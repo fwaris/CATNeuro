@@ -1,5 +1,5 @@
 ﻿namespace CATNeuro
-open Probability
+open CATProb
 
 module rec GraphOps =
     let isInput (n:Node) = match n.Type with Input  -> true | _ -> false
@@ -130,9 +130,12 @@ module rec GraphOps =
         //exclude single input or output connections from getting turned off
         let cnn = if inputs.Length=1 && inputs.[0].On then g.Conns |> List.filter (fun c -> not(c=inputs.[0])) else g.Conns
         let cnn = if outputs.Length=1 && outputs.[0].On then cnn |> List.filter (fun c-> not(c=outputs.[0])) else cnn
-        cnn.[Probability.RNG.Value.Next(cnn.Length)]
+        if cnn.Length > 0 then
+            cnn.[CATProb.RNG.Value.Next(cnn.Length)] |> Some
+        else
+            None
 
-    let randConn (g:Graph) = g.Conns.[Probability.RNG.Value.Next(g.Conns.Length)]
+    let randConn (g:Graph) = g.Conns.[CATProb.RNG.Value.Next(g.Conns.Length)]
 
     ///update the connection list by removing one connection and adding a list of new connections
     let updateConns removeConn addList baseList = 
@@ -208,9 +211,11 @@ module rec GraphOps =
 
     ///toggle a random connection
     let toggleConnection cfg (g:Graph) =
-        let oldConn = randConnForToggle g
-        let newConn = {oldConn with On=not oldConn.On}
-        {g with Conns = g.Conns |> updateConns oldConn [newConn]}
+         randConnForToggle g
+        |> Option.map(fun oldConn ->
+            let newConn = {oldConn with On=not oldConn.On}
+            {g with Conns = g.Conns |> updateConns oldConn [newConn]})
+        |> Option.defaultWith(fun ()->printfn "unable to find a connection to toggle"; g)
 
     ///add a random connection
     let addConnection cfg (g:Graph) =
@@ -257,8 +262,12 @@ module rec GraphOps =
     ///mutate paramenter of a random node
     let randMutateParm cfg (g:Graph) =       
         let ins = internalNodes g 
-        let n = ins.[RNG.Value.Next(ins.Length)]
-        evolveParm cfg g n.Id
+        if ins.Length > 0 then
+            let n = ins.[RNG.Value.Next(ins.Length)]
+            evolveParm cfg g n.Id
+        else
+            printfn "no internal nodes in graph"
+            g
 
 
     ///remove dead nodes
@@ -332,5 +341,10 @@ module rec GraphOps =
         )
         |> List.sum
 
-
-
+    ///trim the main graph and any subgraphs
+    ///contained within 
+    let compress (g:Graph) =
+        let nodes = g.Nodes |> Map.map (fun id sg -> 
+            let nt = match sg.Type with Cell (SubGraph g) -> trimGraph g |> SubGraph |> Cell | n -> n
+            {sg with Type = nt})
+        {g with Nodes=nodes} |> trimGraph

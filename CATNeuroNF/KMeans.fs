@@ -28,7 +28,7 @@ module KMeansClustering =
 
     // Picks k random observations as initial centroids
     // (this is very lazy, even tolerates duplicates)
-    let randomCentroids<'a> (rng: Probability.XorshiftPRNG) 
+    let randomCentroids<'a> (rng: CATProb.XorshiftPRNG) 
                             (sample: 'a seq) 
                             k =
         let size = Seq.length sample

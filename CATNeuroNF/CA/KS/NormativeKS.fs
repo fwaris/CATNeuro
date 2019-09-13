@@ -1,7 +1,7 @@
 ﻿namespace CATNeuro
 open Ext
 open FSharp.Reflection
-open Probability
+open CATProb
 
 module rec NormativeKS =         
     let acceptance ca cfg species (st,topG) =

@@ -1,7 +1,8 @@
 ﻿namespace CATNeuro
 //internal state and ops to run CA 
-open Probability
+open CATProb
 open FSharp.Reflection
+open Ext
 
 type ShState = 
     {
@@ -155,3 +156,53 @@ module CAUtils =
             elif spin < ths.[2] then GraphOps.addConnection cfg g
             else                     insertNode cfg speciesType st g
         {indv with Graph=g'}
+
+
+    let hexagonNetworkViz (pop:Individual[]) id =
+        let rowCount = sqrt (float pop.Length)
+        let rowLen = int rowCount
+        let r = id / rowLen
+        let c = id % rowLen
+        let evnCol = if c % 2 = 0 then 1 else -1
+        let idxs = 
+            [|
+                r * rowLen + c-1
+                r * rowLen + c+1
+                (r-1) * rowLen + c
+                (r+1) * rowLen + c
+                (r+evnCol) * rowLen + (c-1)
+                (r+evnCol) * rowLen + (c+1)
+            |]
+        idxs |> Array.map (fun i-> pop.[if i < 0 then pop.Length+i else i % pop.Length])
+
+    let binnedPareto bins (xs:(int*float[])[]) : int[] =
+        //make bins using first objective range
+        let min1 = xs |> Array.map (fun (_,xs)->xs.[0]) |> Array.min
+        let max1 = xs |> Array.map (fun (_,xs)->xs.[0]) |> Array.max
+        let bins = makeBins min1 (max1 + 0.0001) (float bins)
+    
+        //bin by first objective
+        let binned = 
+            (Map.empty, xs |> Array.mapi (fun i indv ->i,indv)) 
+            ||> Array.fold (fun acc (i,((_,xs) as indv)) -> 
+                let d = xs.[0]
+                let b = bins |> List.find (fun (mn,mx) -> mn <= d && d < mx)
+                let x = 
+                    match acc |> Map.tryFind b with
+                    | Some ls -> indv::ls
+                    | None    -> [indv]
+                acc |> Map.add b x)     
+    
+        let sortedBins = 
+            binned 
+            |> Map.map (fun k vs -> vs |> List.sortBy (fun (_,xs) -> xs.[1]))    //sort by 2nd objective within each bin
+            |> Map.toSeq
+            |> Seq.sortBy (fun ((mn,mx),_) -> mx)                               //sort bins in order of first objective
+            |> Seq.toList
+    
+        let ordered = clct [] sortedBins []                                     //collect from bins in a round-robbin fashion
+    
+        ordered
+        |> List.map (fun (id,_) -> id)
+        |> List.toArray
+    

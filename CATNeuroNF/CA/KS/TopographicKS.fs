@@ -14,7 +14,7 @@ module rec TopographicKS =
         let indvs' =
             indvs
             |> Array.map (fun indv -> 
-                let cntrd = Probability.spinWheel tpst.SpinWheel 
+                let cntrd = CATProb.spinWheel tpst.SpinWheel 
                 let p2 = cntrd.Best
                 let g = GraphOps.crossover cfg p2.Graph indv.Graph
                 {indv with Graph=g})
@@ -45,7 +45,7 @@ module rec TopographicKS =
             |> Seq.map (toCentroid ca) 
             |> Seq.toList
 
-        let wheel = cntrds |> Seq.map (fun c->c,float c.Count) |> Seq.toArray |> Probability.createWheel
+        let wheel = cntrds |> Seq.map (fun c->c,float c.Count) |> Seq.toArray |> CATProb.createWheel
 
         {Centroids=cntrds; SpinWheel=wheel; CIndvs=indvs}
 
@@ -58,7 +58,7 @@ module rec TopographicKS =
             Best = lbest
         }
 
-    let cfact xs k =  KMeansClustering.randomCentroids Probability.RNG.Value xs k |> List.map (fun (x:Individual)->x,[])
+    let cfact xs k =  KMeansClustering.randomCentroids CATProb.RNG.Value xs k |> List.map (fun (x:Individual)->x,[])
     let cdist (x,_) y = GraphOps.distGraph x.Graph y.Graph
     let cavg (c,_) xs = c::xs |> center 
 

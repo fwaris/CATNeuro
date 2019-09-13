@@ -1,6 +1,6 @@
 ﻿namespace CATNeuro
 open Ext
-open Probability
+open CATProb
 
 module rec DomainKS = 
     let acceptance ca cfg species (st,topG) =

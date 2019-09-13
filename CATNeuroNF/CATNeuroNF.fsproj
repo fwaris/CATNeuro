@@ -43,7 +43,7 @@
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Probability.fs" />
+    <Compile Include="CATProb.fs" />
     <Compile Include="KMeans.fs" />
     <Compile Include="Extensions.fs" />
     <Compile Include="Types.fs" />
@@ -59,8 +59,8 @@
     <Compile Include="CA\BeliefSpace.fs" />
     <Compile Include="CA\CARunner.fs" />
     <Content Include="Docs\NeuroEvolution.txt" />
-    <None Include="Tests\References.fsx" />
-    <None Include="Tests\SetEnv.fsx" />
+    <None Include="Tests\CNReferences.fsx" />
+    <None Include="Tests\CNSetEnv.fsx" />
     <None Include="Tests\GraphEvolution.fsx" />
     <Content Include="packages.config" />
   </ItemGroup>

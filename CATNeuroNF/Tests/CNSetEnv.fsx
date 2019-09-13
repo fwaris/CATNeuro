@@ -1,4 +1,4 @@
-﻿#load "References.fsx"
+﻿#load "CNReferences.fsx"
 open CATNeuro
 open Microsoft.Msagl.GraphViewerGdi
 
