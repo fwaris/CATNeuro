@@ -128,16 +128,16 @@ module CAUtils =
             //module connection
             | Module _ , Cell(Norm _)   , _
             | Module _ , _              , Cell (Norm _)
-            | Module _ , Input          , Output _ 
-            | Module _ , Input          , Cell (Norm _) 
-            | Module _ , Cell (Norm _)  , Output _                       -> GraphOps.genDenseCell cfg
-            | Module _ , Input          , Cell (Dense _)
+            | Module _ , ModInput       , ModOutput
+            | Module _ , ModInput       , Cell (Norm _) 
+            | Module _ , Cell (Norm _)  , ModOutput                      -> GraphOps.genDenseCell cfg
+            | Module _ , ModInput       , Cell (Dense _)
             | Module _ , Cell (Dense _) , Cell (Dense _)
-            | Module _ , Cell (Dense _) , Output _                       -> denseOrNorm frac cfg
+            | Module _ , Cell (Dense _) , ModOutput                      -> denseOrNorm frac cfg
             //blueprint connection
-            | Blueprint, Input                  , Output _                
+            | Blueprint, Input _                , Output _                
             | Blueprint, Cell(ModuleSpecies _)  , Output _
-            | Blueprint, Input                  , Cell (ModuleSpecies _)
+            | Blueprint, Input _                , Cell (ModuleSpecies _)
             | Blueprint, Cell (ModuleSpecies _) , Cell (ModuleSpecies _) -> GraphOps.genBlueprintCell cfg
             //any other combination is invalid
             | m        , f                      , t  -> failwithf "invalid connection %A %A %A" m f t

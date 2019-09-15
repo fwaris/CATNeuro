@@ -2,6 +2,7 @@
 open CATNeuro
 open CATNeuro.GraphDiag
 open CATNeuro.GraphOps
+open CNSetEnv
 
 let cfg = Cfg.Default
 let p = LearningParms.Default
@@ -31,7 +32,7 @@ let sampleGraph() =
                    Type = Cell (Dense {Dims = 3; Bias=Bias.Off; Activation=NONE})
                 }
 
-    let input1 =  {Id=Id"input1"; Type = Input }
+    let input1 =  {Id=Id"input1"; Type = Input "Input1" }
 
 
     let conns = 
@@ -51,9 +52,9 @@ let sampleGraph() =
 let g = sampleGraph()
 
 (*
-SetEnv.showGraph "sample 1" g
+showGraph "sample 1" g
 let gt = g |> trimGraph
-SetEnv.showGraph "sample 1 trim" gt
+showGraph "sample 1 trim" gt
 *)
 
 
@@ -62,7 +63,7 @@ let dmpC g = g.Conns |> List.iter (printConn >> printfn "%s" )
 let testToggle() =
     let gt1 = toggleConnection cfg g
     gt1 = gt1 
-    SetEnv.showGraph "toggle connection"  gt1
+    showGraph "toggle connection"  gt1
 
     let gt2 = toggleConnection cfg gt1
 
@@ -80,10 +81,10 @@ let testAddConn() =
     let g1 = addConnection cfg g
     let g2 = addConnection cfg g1
     let g3 = addConnection cfg g2
-    SetEnv.showGraph "add connection" g1
-    SetEnv.showGraph "g" g
-    SetEnv.showGraph "g2" g2
-    SetEnv.showGraph "g3" g3
+    showGraph "add connection" g1
+    showGraph "g" g
+    showGraph "g2" g2
+    showGraph "g3" g3
     dmpC g 
     dmpC g1
     dmpC g2
@@ -92,25 +93,25 @@ let testAddConn() =
 let testAddNode() =
     let g1 = addNode cfg g
     let g2 = addNode cfg g1
-    SetEnv.showGraph "g" g
-    SetEnv.showGraph "add node" g1
-    SetEnv.showGraph "g2" g2
+    showGraph "g" g
+    showGraph "add node" g1
+    showGraph "g2" g2
     let gn = (g,[1 .. 10]) ||> List.fold (fun x i -> printfn "i=%d" i; addNode cfg x)
-    SetEnv.showGraph "gn" gn
+    showGraph "gn" gn
 
 let testCrossover1() =
     let g1 = addNode cfg g
     let g2 = addNode cfg g
     let g3 = crossover cfg g1 g2
-    SetEnv.showGraph "g1" g1
-    SetEnv.showGraph "g2" g2
-    SetEnv.showGraph "crossover" g3
+    showGraph "g1" g1
+    showGraph "g2" g2
+    showGraph "crossover" g3
 
 let testCrossover() = 
     let g1 = addNode cfg g
     let g2 = addNode cfg g1
     let g3 = crossover cfg g1 g2 |> addConnection cfg
-    SetEnv.showGraph "g" g
-    SetEnv.showGraph "g1" g1
-    SetEnv.showGraph "g2" g2
-    SetEnv.showGraph "g3" g3
+    showGraph "g" g
+    showGraph "g1" g1
+    showGraph "g2" g2
+    showGraph "g3" g3

@@ -2,7 +2,7 @@
 
 type Node = {Id:Id; Type:NodeType}
 type Id = Id of string
-type NodeType = Cell of CellType | Output of Dense | Input
+type NodeType = Cell of CellType | Output of Dense | Input of string | ModInput | ModOutput
 type Conn = {On:bool; From:Id; To:Id; Innovation:int}
 type NormalizationType = BatchNorm | LayerNorm
 type CellType = 

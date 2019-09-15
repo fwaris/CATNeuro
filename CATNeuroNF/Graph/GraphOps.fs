@@ -2,8 +2,9 @@
 open CATProb
 
 module rec GraphOps =
-    let isInput (n:Node) = match n.Type with Input  -> true | _ -> false
-    let isOutput (n:Node) = match n.Type with Output _ -> true | _ -> false
+    let isInput (n:Node) = match n.Type with Input _ | ModInput -> true | _ -> false
+    let isOutput (n:Node) = match n.Type with Output _ | ModOutput -> true | _ -> false
+    let inputName (n:Node) = match n.Type with Input n -> n | _ -> failwith "not named input node"
 
     let randBias() = if RNG.Value.NextDouble() < 0.5 then Bias.On else Bias.Off
 
@@ -14,6 +15,8 @@ module rec GraphOps =
         let activations = exVal |> Option.map (fun x -> activations |> Array.filter (fun y-> x=y |> not)) |> Option.defaultValue activations
         let act = activations.[RNG.Value.Next(activations.Length)]
         FSharp.Reflection.FSharpValue.MakeUnion(act,[||]) :?> _
+
+    let incomingConnections (g:Graph) nid = g.Conns |> List.filter(fun c->c.To=nid)
 
     ///select a random normalization excluding 'ex' if provided
     let randNormalization (ex:NormalizationType option) : NormalizationType =
@@ -320,7 +323,7 @@ module rec GraphOps =
     let distConn (n1:Node) (n2:Node) =
         let W=2.0
         match n1.Type, n2.Type with
-        | Input, Input          -> 0.0
+        | Input _, Input _      -> 0.0
         | Output _, Output _    -> 0.0
         | Cell c1, Cell c2      -> distCell c1 c2
         | _, _                  -> W
