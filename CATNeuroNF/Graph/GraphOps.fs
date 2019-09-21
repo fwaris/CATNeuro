@@ -258,7 +258,7 @@ module rec GraphOps =
             | Cell (ModuleSpecies a) -> Cell (ModuleSpecies (RNG.Value.Next(cfg.NumSpecies)))
             | Cell (Dense a)         -> Cell (Dense {a with Dims=RNG.Value.Next(int cfg.DenseRange.Lo, int cfg.DenseRange.Hi)})
             | Cell (Norm a)          -> Some a |> randNormalization |> Norm |> Cell
-            | x -> x
+            | x                      -> printfn "not mutating node of type %A" x; x
 
         {g with Nodes=g.Nodes |> Map.add nodeId {na with Type=nType}}
 

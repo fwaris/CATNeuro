@@ -116,3 +116,12 @@ module rec CARunner =
                     State = state'
                 }
         }
+        |> Async.Catch
+
+    let initStep ca = 
+        let state = 
+            ca.Populations 
+            |> Array.map(fun x->x.Species, CAUtils.initState())
+            |> Map.ofArray
+
+        {CA=ca; Count=0; Best=[||]; State=state}
