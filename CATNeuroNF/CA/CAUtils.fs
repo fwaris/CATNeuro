@@ -3,6 +3,7 @@
 open CATProb
 open FSharp.Reflection
 open Ext
+open System
 
 type ShState = 
     {
@@ -56,6 +57,8 @@ type CAState =
     }
 
 module CAUtils =
+
+    let HIGH_VAL = 1e10 //max value of fitness
 
     ///select a random Knowledge, excluding 'ex' if given
     let randKS (ex:Knowledge option) : Knowledge = 
@@ -123,6 +126,9 @@ module CAUtils =
     let insertNode cfg speciesType frac (g:Graph) =
         let conn = GraphOps.randConn g //randomly selected connection that is to be split
 
+        let isCell = function  Cell (Dense _) -> true | _ -> false
+        
+
         let nodeToAdd =
             match speciesType, g.Nodes.[conn.From].Type, g.Nodes.[conn.To].Type with
             //module connection
@@ -141,7 +147,8 @@ module CAUtils =
             | Blueprint, Cell (ModuleSpecies _) , Cell (ModuleSpecies _) -> GraphOps.genBlueprintCell cfg
             //any other combination is invalid
             | m        , f                      , t  -> failwithf "invalid connection %A %A %A" m f t
-
+        if speciesType=Blueprint && isCell nodeToAdd.Type then
+            failwith "invalid node"
         GraphOps.insertNode cfg g conn nodeToAdd
 
 
@@ -175,34 +182,44 @@ module CAUtils =
             |]
         idxs |> Array.map (fun i-> pop.[if i < 0 then pop.Length+i else i % pop.Length])
 
+    let private binnedEvaled bins (xs:(int*float[])[]) : int[] =
+            //make bins using first objective range
+            let min1 = xs |> Array.map (fun (_,xs)->xs.[0]) |> Array.min
+            let max1 = xs |> Array.map (fun (_,xs)->xs.[0]) |> Array.max
+            let bins = makeBins min1 (max1 + 0.0001) (float bins)
+    
+            //bin by first objective
+            let binned = 
+                (Map.empty, xs |> Array.mapi (fun i indv ->i,indv)) 
+                ||> Array.fold (fun acc (i,((_,xs) as indv)) -> 
+                    let d = xs.[0]
+                    let b = bins |> List.find (fun (mn,mx) -> mn <= d && d < mx)
+                    let x = 
+                        match acc |> Map.tryFind b with
+                        | Some ls -> indv::ls
+                        | None    -> [indv]
+                    acc |> Map.add b x)     
+    
+            let sortedBins = 
+                binned 
+                |> Map.map (fun k vs -> vs |> List.sortBy (fun (_,xs) -> xs.[1]))    //sort by 2nd objective within each bin
+                |> Map.toSeq
+                |> Seq.sortBy (fun ((mn,mx),_) -> mx)                               //sort bins in order of first objective
+                |> Seq.toList
+    
+            let ordered = clct [] sortedBins []                                     //collect from bins in a round-robbin fashion
+    
+            ordered 
+            |> List.map (fun (id,_) -> id)
+            |> List.toArray
+
     let binnedPareto bins (xs:(int*float[])[]) : int[] =
-        //make bins using first objective range
-        let min1 = xs |> Array.map (fun (_,xs)->xs.[0]) |> Array.min
-        let max1 = xs |> Array.map (fun (_,xs)->xs.[0]) |> Array.max
-        let bins = makeBins min1 (max1 + 0.0001) (float bins)
-    
-        //bin by first objective
-        let binned = 
-            (Map.empty, xs |> Array.mapi (fun i indv ->i,indv)) 
-            ||> Array.fold (fun acc (i,((_,xs) as indv)) -> 
-                let d = xs.[0]
-                let b = bins |> List.find (fun (mn,mx) -> mn <= d && d < mx)
-                let x = 
-                    match acc |> Map.tryFind b with
-                    | Some ls -> indv::ls
-                    | None    -> [indv]
-                acc |> Map.add b x)     
-    
-        let sortedBins = 
-            binned 
-            |> Map.map (fun k vs -> vs |> List.sortBy (fun (_,xs) -> xs.[1]))    //sort by 2nd objective within each bin
-            |> Map.toSeq
-            |> Seq.sortBy (fun ((mn,mx),_) -> mx)                               //sort bins in order of first objective
-            |> Seq.toList
-    
-        let ordered = clct [] sortedBins []                                     //collect from bins in a round-robbin fashion
-    
-        ordered
-        |> List.map (fun (id,_) -> id)
-        |> List.toArray
+        let evaled =   xs |> Array.filter (fun (x,f) -> f.[0] < HIGH_VAL)
+        if evaled |> Array.isEmpty then //its possible that nothing was evaluated yet for a module species
+            xs |> Array.map fst
+        else 
+            let unevaled = xs |> Array.filter (fun (x,f) ->  f.[0] >= HIGH_VAL )   //unevaluated will be sorted last
+            let ordered = binnedEvaled bins evaled
+            Array.append ordered (unevaled |> Array.map fst)
+
     

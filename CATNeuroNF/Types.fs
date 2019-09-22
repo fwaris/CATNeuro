@@ -48,7 +48,10 @@ type Population = {Species:SpeciesType; Individuals:Individual[]; Cfg:Cfg}
 
 type SpeciesIndv = {SpeciesId:int; IndvidualId:int}
 
-type NetworkAssembly = {BlueprintId:int; Parms:LearningParms; Graph:Graph; ModuleReplacements:SpeciesIndv[] }
+type AssembledModel = {Parms:LearningParms; Graph:Graph} 
+type AssemblyMeta = {Gen:int}
+
+type NetworkAssembly = {BlueprintId:int; Meta:AssemblyMeta;  Model:AssembledModel; ModuleReplacements:SpeciesIndv[] }
 
 type Settings = {TakeFraction: float} with static member Default = {TakeFraction=0.25}
 
@@ -57,7 +60,7 @@ type Network = Individual[] ->  int -> Individual[]
 type CA =
     {
         Populations  : Population[]
-        Evaluator    : NetworkAssembly -> Async<int*float[]> //multi objective
+        Evaluator    : NetworkAssembly -> int*float[] //multi objective
         ParetoRank   : (int*float[])[] -> int[]
         Settings     : Settings
         Network      : Network

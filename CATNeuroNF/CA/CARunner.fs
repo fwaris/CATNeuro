@@ -26,7 +26,7 @@ module rec CARunner =
         {blueprint with Nodes=nodes'}        
 
     //assemble a single blueprint with randomly selected individuls from module species
-    let assembleNetwork (spcsMap:Map<int,Population>) (blueprint:Individual) =
+    let assembleNetwork gen (spcsMap:Map<int,Population>) (blueprint:Individual) =
     
         //species used by blueprint
         let speciesPops = 
@@ -44,7 +44,8 @@ module rec CARunner =
         let assembly = blueprint.Graph |> replaceWith (selIndvs |> Map.map (fun _ x->x.Graph))
         let assembly' = GraphOps.trimGraph assembly
         let replaceMents = selIndvs|>Map.map(fun sid ind->{SpeciesId=sid; IndvidualId=ind.Id}) |> Map.toSeq |> Seq.map snd |> Seq.toArray
-        {BlueprintId = blueprint.Id; Parms=parms; Graph=assembly'; ModuleReplacements=replaceMents }
+        let model = {Graph=assembly'; Parms=parms}
+        {BlueprintId = blueprint.Id; Model=model; Meta={Gen=gen}; ModuleReplacements=replaceMents }
 
     let separatePop pops = 
         let bprints = pops |> Array.find (fun x -> isBlueprint x.Species)
@@ -52,9 +53,9 @@ module rec CARunner =
         bprints,spcsMap
 
     ///assemble blueprints into networks
-    let assembleNetworks (ca:CA) =
+    let assembleNetworks gen (ca:CA) =
         let bprints,spcsMap = separatePop ca.Populations 
-        bprints.Individuals |> Array.map (assembleNetwork spcsMap)
+        bprints.Individuals |> Array.map (assembleNetwork gen spcsMap)
     
     ///attribute fitness to blueprint and module individuals after evaluation
     let attributeFitness (ca:CA) (networks:NetworkAssembly[]) (evaluated:((int*float[])[])) =
@@ -98,12 +99,39 @@ module rec CARunner =
                 let st' = st |> Map.add pop.Species popSt''
                 st',pop'::acc)
         (st',{ca with Populations=pop' |> List.toArray})
+
+    ///no async for easier debugging
+    let debugStep (st:TimeStep) =
+        let networks = assembleNetworks st.Count st.CA
+        let evaluated = networks |> Array.map (st.CA.Evaluator) 
+        let nmap = networks |> Array.map (fun x->x.BlueprintId,x) |> Map.ofArray
+        let ca' = attributeFitness st.CA networks evaluated
+        let state',ca'' = stepPopulations st.State ca'
+        let rankedNetworks = st.CA.ParetoRank evaluated |> Array.map (fun i->nmap.[i])
+        {st with 
+            Best=rankedNetworks |> Array.truncate 5; 
+            CA = ca''
+            Count=st.Count+1
+            State = state'
+        }
     
      ///single timestep 
     let step (st:TimeStep) =
         async {
-            let networks = assembleNetworks st.CA
-            let! evaluated = networks |> Array.map (st.CA.Evaluator) |> Async.Parallel 
+            let networks = assembleNetworks st.Count st.CA
+            let! evaluated = 
+                networks 
+                |> Array.map (fun n -> 
+                    async{
+                        try 
+                            let ft = st.CA.Evaluator n
+                            return ft
+                        with ex ->
+                            printfn "%A" ex
+                            let ft = n.BlueprintId, [|CAUtils.HIGH_VAL; CAUtils.HIGH_VAL|]
+                            return ft
+                       }) 
+                |> Async.Parallel 
             let nmap = networks |> Array.map (fun x->x.BlueprintId,x) |> Map.ofArray
             let ca' = attributeFitness st.CA networks evaluated
             let state',ca'' = stepPopulations st.State ca'
@@ -118,10 +146,16 @@ module rec CARunner =
         }
         |> Async.Catch
 
+
+    let initIndv x = {x with Fitness = Array.create (x.Fitness.Length) CAUtils.HIGH_VAL}    //set init fit to high val
+    let initPop x = {x with Individuals=x.Individuals|>Array.map initIndv}
+
     let initStep ca = 
+        let ca' = {ca with Populations=ca.Populations |> Array.map initPop}
+
         let state = 
-            ca.Populations 
+            ca'.Populations 
             |> Array.map(fun x->x.Species, CAUtils.initState())
             |> Map.ofArray
 
-        {CA=ca; Count=0; Best=[||]; State=state}
+        {CA=ca'; Count=0; Best=[||]; State=state}

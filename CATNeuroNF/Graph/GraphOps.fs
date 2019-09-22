@@ -157,16 +157,17 @@ module rec GraphOps =
 
     ///return a new possible random connection that does not yet exist (or None if not possible)
     let randUnconn (g:Graph) =
-        let ns = tsort g |> List.toArray
-        let idxNonInput = ns |> Array.findIndex (fun id->isInput g.Nodes.[id] |> not)
+        let ns = tsort g |> List.toArray     //topological sort to avoid cyclic references
         let connected = g.Conns |> List.map(fun c->c.From,c.To) |> set
+        let nodes = g.Nodes |> Map.toSeq |> Seq.map fst
         let unconnected = 
             seq {for i in 0..ns.Length-1 do
-                    for j in idxNonInput..ns.Length-1 do
+                    for j in 1..ns.Length-1 do
                     if i < j then
-                        let possibleConn = ns.[i],ns.[j]
-                        if connected.Contains possibleConn |> not then
-                            yield possibleConn
+                        match ns.[i],ns.[j] with
+                        | f,t when connected.Contains(f,t) -> ()
+                        | f,t when g.Nodes.[t] |> isInput  -> ()
+                        | f,t                              -> yield (f,t)
                 }
             |> Seq.toArray
         if unconnected.Length = 0 then
@@ -203,7 +204,9 @@ module rec GraphOps =
             | Same c | Diff (c,_) | FrmL c | ExtraL c -> a.Nodes.[c.From]::a.Nodes.[c.To]::ns,c::cs
             | FrmR c | ExtraR c                       -> b.Nodes.[c.From]::b.Nodes.[c.To]::ns,c::cs
             )
-        {a with Nodes=nodes |> List.map (fun n->n.Id,n) |> Map.ofList; Conns=conns}
+        let inputs = nodes |> List.filter isInput |> List.map(fun i->i.Id) |> set
+        let conns' = conns |> List.filter (fun c->inputs.Contains c.To |> not)             //ensure connections point to input
+        {a with Nodes=nodes |> List.map (fun n->n.Id,n) |> Map.ofList; Conns=conns'}
 
     ///add node to graph by splitting a connection
     //('complexify' in NEAT)
@@ -223,7 +226,9 @@ module rec GraphOps =
     ///add a random connection
     let addConnection cfg (g:Graph) =
        match randUnconn g with 
-       | Some (f,t) -> {g with Conns = {On=true; Innovation=cfg.IdGen.conn(); From=f; To=t}::g.Conns}
+       | Some (f,t) -> 
+            if isInput g.Nodes.[t] then failwithf "target node is input"
+            {g with Conns = {On=true; Innovation=cfg.IdGen.conn(); From=f; To=t}::g.Conns}
        | None       -> g
 
     let insertNode cfg (g:Graph) conn (newNode:Node) =

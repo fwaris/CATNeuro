@@ -15,8 +15,7 @@ module rec DomainKS =
 
         let reps' = toReplace |> Array.map (fun indv ->
             let rnd = topP |> Array.item (RNG.Value.Next(topP.Length))
-            let g = GraphOps.addNode cfg rnd.Graph  //add node to one of the top performers and use its graph
-            {indv with Graph=g })
+            addNode cfg speciesType st rnd)
 
         let indvs' = Array.append elites' reps'
         st,indvs'

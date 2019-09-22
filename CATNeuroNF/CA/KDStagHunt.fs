@@ -74,7 +74,7 @@ module rec KDStagHunt =
                 let wrstFrnd = all |> Array.find (fun x->x.Id=Array.last ranked)
 
                 let bestFit = bestFrnd.Fitness.[0] //used primary objective for placement
-                let wrstFit = wrstFrnd.Fitness.[0]
+                let wrstFit = wrstFrnd.Fitness.[0] + 1.0
                 let myFit = indv.Fitness.[0]
 
                 if isValidNum bestFit && isValidNum wrstFit then

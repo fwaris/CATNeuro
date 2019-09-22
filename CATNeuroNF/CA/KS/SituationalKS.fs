@@ -42,7 +42,7 @@ module rec SituationalKS =
         //find 'distance' of the rest from best
         let divsM = 
             exRest
-            |> Array.mapi (fun  i indv -> i, (1.0/GraphOps.distGraph best.Graph indv.Graph))
+            |> Array.mapi (fun  i indv -> i, (GraphOps.distGraph best.Graph indv.Graph))
             |> Map.ofArray
 
         let (_,mxD) = divsM |> Map.toArray |> Seq.maxBy snd
