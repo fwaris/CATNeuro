@@ -14,10 +14,12 @@ module rec DomainKS =
         let elites'     = elites |> Array.map (addNode cfg speciesType st)
 
         let reps' = toReplace |> Array.map (fun indv ->
-            let rnd = topP |> Array.item (RNG.Value.Next(topP.Length))
-            addNode cfg speciesType st rnd)
+            let topRnd = topP |> Array.item (RNG.Value.Next(topP.Length))
+            let g = CAUtils.insertNode cfg speciesType st.DmState.NormNodeProb topRnd.Graph
+            {indv with Graph=g}
+            )
 
-        let indvs' = Array.append elites' reps'
+        let indvs' = Array.append elites' reps' |> Array.sortBy (fun x->x.Id)
         st,indvs'
 
     ///add new node to the individual

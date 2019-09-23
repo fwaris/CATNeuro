@@ -159,7 +159,6 @@ module rec GraphOps =
     let randUnconn (g:Graph) =
         let ns = tsort g |> List.toArray     //topological sort to avoid cyclic references
         let connected = g.Conns |> List.map(fun c->c.From,c.To) |> set
-        let nodes = g.Nodes |> Map.toSeq |> Seq.map fst
         let unconnected = 
             seq {for i in 0..ns.Length-1 do
                     for j in 1..ns.Length-1 do
@@ -286,11 +285,32 @@ module rec GraphOps =
             printfn "no internal nodes in graph"
             g
 
+    ///remove dead nodes
+    ///only keep nodes that are on the path 
+    ///from inputs to outputs                   
+    let trimGraph (g:Graph) =
+        let _ = validate(g)
+        let outputs = g.Nodes |> Map.toSeq |> Seq.filter (snd>>isOutput) |> Seq.map fst
+
+        let rec loop (acc,stack) n =
+            if isInput g.Nodes.[n] then
+                (acc |> Set.add n,stack) ||> List.fold (fun acc i -> Set.add i acc),[]
+            else
+                let incoming = g.Conns |> List.filter (fun c-> c.On && c.To=n) |> List.map (fun x->x.From)
+                ((acc,n::stack),incoming) ||> List.fold loop
+
+        let reachable,_= ((Set.empty,[]),outputs) ||> Seq.fold loop
+        let nodes = g.Nodes |> Map.filter (fun id _ -> reachable.Contains id)
+        let conns = g.Conns |> List.filter (fun c->c.On && reachable.Contains c.From && reachable.Contains c.To)
+        let g' = {Nodes=nodes; Conns=conns}                                                                                                    
+        let _ = validate(g')
+        g'
+
 
     ///remove dead nodes
     ///only keep nodes that are on the path 
     ///from inputs to outputs                   ****** TO FIX *****
-    let trimGraph (g:Graph) =
+    let trimGraph2 (g:Graph) =
         let revIds = tsort g |> List.rev |> List.toArray
         let i = revIds |> Array.findIndex (fun id -> g.Nodes.[id] |> isOutput |> not)
         let out,rest = set revIds.[0..i-1], Array.toList revIds.[i..]
