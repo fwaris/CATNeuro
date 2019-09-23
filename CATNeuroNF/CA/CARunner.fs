@@ -41,7 +41,7 @@ module rec CARunner =
             |> Map.ofSeq
 
         let parms = match blueprint.IndvType with BlueprintIndv p -> p | _ -> failwithf "not a blueprint indvidual"
-        let assembly = blueprint.Graph |> replaceWith (selIndvs |> Map.map (fun _ x->x.Graph))
+        let assembly = blueprint.Graph |> replaceWith (selIndvs |> Map.map (fun _ x->x.Graph |> GraphOps.trimGraph))
         let assembly' = GraphOps.trimGraph assembly
         let replaceMents = selIndvs|>Map.map(fun sid ind->{SpeciesId=sid; IndvidualId=ind.Id}) |> Map.toSeq |> Seq.map snd |> Seq.toArray
         let model = {Graph=assembly'; Parms=parms}

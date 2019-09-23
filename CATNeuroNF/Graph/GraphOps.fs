@@ -205,8 +205,17 @@ module rec GraphOps =
             | FrmR c | ExtraR c                       -> b.Nodes.[c.From]::b.Nodes.[c.To]::ns,c::cs
             )
         let inputs = nodes |> List.filter isInput |> List.map(fun i->i.Id) |> set
-        let conns' = conns |> List.filter (fun c->inputs.Contains c.To |> not)             //ensure connections point to input
-        {a with Nodes=nodes |> List.map (fun n->n.Id,n) |> Map.ofList; Conns=conns'}
+        let conns' = conns |> List.filter (fun c->inputs.Contains c.To |> not)   //ensure connections point to input
+        let connUnique = 
+            (Map.empty,conns') 
+            ||> List.fold (fun acc c ->
+                let c' = 
+                    match acc |> Map.tryFind (c.From,c.To) with
+                    | Some c2 -> if c2.Innovation < c.Innovation then c2 else c
+                    | None    -> c
+                acc |> Map.add (c'.From,c'.To) c)
+        let conns'' = connUnique |> Map.toSeq |> Seq.map snd |> Seq.toList
+        {a with Nodes=nodes |> List.map (fun n->n.Id,n) |> Map.ofList; Conns=conns''}
 
     ///add node to graph by splitting a connection
     //('complexify' in NEAT)
@@ -280,7 +289,7 @@ module rec GraphOps =
 
     ///remove dead nodes
     ///only keep nodes that are on the path 
-    ///from inputs to outputs
+    ///from inputs to outputs                   ****** TO FIX *****
     let trimGraph (g:Graph) =
         let revIds = tsort g |> List.rev |> List.toArray
         let i = revIds |> Array.findIndex (fun id -> g.Nodes.[id] |> isOutput |> not)
