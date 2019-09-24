@@ -285,21 +285,31 @@ module rec GraphOps =
             printfn "no internal nodes in graph"
             g
 
+    let flip f a b = f b a
+    let pop st = match st with [] -> [] | _::tail -> tail
+
     ///remove dead nodes
     ///only keep nodes that are on the path 
     ///from inputs to outputs                   
     let trimGraph (g:Graph) =
         let _ = validate(g)
-        let outputs = g.Nodes |> Map.toSeq |> Seq.filter (snd>>isOutput) |> Seq.map fst
+        let outputs = g.Nodes |> Map.toSeq |> Seq.filter (snd>>isOutput) |> Seq.map fst |> Seq.toList
 
-        let rec loop (acc,stack) n =
-            if isInput g.Nodes.[n] then
-                (acc |> Set.add n,stack) ||> List.fold (fun acc i -> Set.add i acc),[]
-            else
+        let rec loop (acc,vstd,stack) ls =
+            match ls with
+            | [] -> (acc,vstd,stack)
+            | (n::rest)::remain when isInput g.Nodes.[n] ->
+                let acc' = (acc |> Set.add n, stack) ||> List.fold (flip Set.add)
+                let vstd' = Set.add n vstd
+                loop (acc',vstd',stack) (rest::remain)
+            | (n::rest)::remain when vstd.Contains n |> not ->
+                let vstd' = Set.add n vstd
                 let incoming = g.Conns |> List.filter (fun c-> c.On && c.To=n) |> List.map (fun x->x.From)
-                ((acc,n::stack),incoming) ||> List.fold loop
+                loop (acc,vstd',n::stack) (incoming::rest::remain)
+            | (_::rest)::remain -> loop (acc,vstd,stack) (rest::remain)
+            | []::remain ->  loop (acc,vstd,pop stack) remain
 
-        let reachable,_= ((Set.empty,[]),outputs) ||> Seq.fold loop
+        let reachable,_,_= loop (Set.empty,Set.empty,[]) [outputs]
         let nodes = g.Nodes |> Map.filter (fun id _ -> reachable.Contains id)
         let conns = g.Conns |> List.filter (fun c->c.On && reachable.Contains c.From && reachable.Contains c.To)
         let g' = {Nodes=nodes; Conns=conns}                                                                                                    
