@@ -60,42 +60,48 @@ module rec GraphOps =
         }
 
     ///validate graph structure
-    let private validate (g:Graph) = 
-        let duplicateEdges = g.Conns |> List.countBy (fun c->c.From,c.To) |> List.filter (fun (_,c) -> c>1)
-        if duplicateEdges.IsEmpty |> not then failwithf "Invalid graph: duplicate edges %A" duplicateEdges
+    let tryValidate (g:Graph) = 
+        if g.Nodes.Count=0 || g.Conns |> List.filter (fun x->x.On) |> List.length = 0 then Choice2Of2 "empty graph"
+        else 
+            let duplicateEdges = g.Conns |> List.countBy (fun c->c.From,c.To) |> List.filter (fun (_,c) -> c>1)
+            if duplicateEdges.IsEmpty |> not then (sprintf "Invalid graph: duplicate edges %A" duplicateEdges) |> Choice2Of2
+            else
 
-        let adjM = 
-            let m = g.Nodes |> Map.map (fun k _ ->[])
-            let m2 = g.Conns |> List.map (fun c->c.From,c.To) |> List.groupBy fst |> List.map (fun (k,xs)->k,xs |> List.map snd)
-            (m,m2) ||> List.fold (fun m (n,ls) -> m |> Map.add n ls)
+                let adjM = 
+                    let m = g.Nodes |> Map.map (fun k _ ->[])
+                    let m2 = g.Conns |> List.map (fun c->c.From,c.To) |> List.groupBy fst |> List.map (fun (k,xs)->k,xs |> List.map snd)
+                    (m,m2) ||> List.fold (fun m (n,ls) -> m |> Map.add n ls)
 
-        let toSet = adjM |> Map.toList |> List.collect snd |> set
-        let fromSet = g.Nodes |> Map.toList |> List.choose (fun (k,v) -> if toSet |> Set.contains k then None else Some k) |> set
-        let nonInpNoIncming = fromSet |> Set.filter (fun i -> isInput g.Nodes.[i] |> not)
-        if nonInpNoIncming.IsEmpty |> not then failwithf "Invalid graph; these non inputs have zero incoming connections %A" nonInpNoIncming
-        let inputWIncming = toSet |> Set.filter (fun i -> isInput g.Nodes.[i])
-        if inputWIncming.IsEmpty |> not then failwithf "Invalid graph; inputs have incoming connections %A" inputWIncming
+                let toSet = adjM |> Map.toList |> List.collect snd |> set
+                let fromSet = g.Nodes |> Map.toList |> List.choose (fun (k,v) -> if toSet |> Set.contains k then None else Some k) |> set
+                let nonInpNoIncming = fromSet |> Set.filter (fun i -> isInput g.Nodes.[i] |> not)
+                if nonInpNoIncming.IsEmpty |> not then sprintf "Invalid graph; these non inputs have zero incoming connections %A" nonInpNoIncming |> Choice2Of2
+                else
+                    let inputWIncming = toSet |> Set.filter (fun i -> isInput g.Nodes.[i])
+                    if inputWIncming.IsEmpty |> not then sprintf "Invalid graph; inputs have incoming connections %A" inputWIncming |> Choice2Of2
+                    else
         
-        //all internal nodes should be reachable from input nodes
-        let inputs = fromSet
-        let nonInputs = g.Nodes |> Map.toList |> List.filter (snd>>isInput>>not) |> List.map fst |> set
+                        //all internal nodes should be reachable from input nodes
+                        let inputs = fromSet
+                        let nonInputs = g.Nodes |> Map.toList |> List.filter (snd>>isInput>>not) |> List.map fst |> set
 
-        let rec traverse visited n =
-            let visited = visited |> Set.add n
-            let toVisit = adjM.[n] |> List.filter (fun t -> visited.Contains t |> not)
-            (visited, toVisit) ||> List.fold traverse
+                        let rec traverse visited n =
+                            let visited = visited |> Set.add n
+                            let toVisit = adjM.[n] |> List.filter (fun t -> visited.Contains t |> not)
+                            (visited, toVisit) ||> List.fold traverse
 
-        let visited = (Set.empty,inputs) ||> Set.fold traverse
+                        let visited = (Set.empty,inputs) ||> Set.fold traverse
 
-        let unvisited = Set.difference nonInputs visited
+                        let unvisited = Set.difference nonInputs visited
 
-        if not unvisited.IsEmpty then failwithf "Invalid graph: nodes not reachable %A" unvisited
+                        if not unvisited.IsEmpty then sprintf "Invalid graph: nodes not reachable %A" unvisited |> Choice2Of2
+                        else
 
-        adjM,inputs
+                            Choice1Of2 (adjM,inputs)
 
     ///topologically sort grpah
     let tsort (g:Graph) =
-        let adjM,inputs = validate g
+        let adjM,inputs = match tryValidate g with Choice1Of2 x -> x | Choice2Of2 ex -> failwith ex
 
         let inDegrees = 
             let m = g.Conns |> List.groupBy (fun x->x.To) |> List.map(fun (k,xs) -> k, xs.Length) |> Map.ofList
@@ -292,7 +298,7 @@ module rec GraphOps =
     ///only keep nodes that are on the path 
     ///from inputs to outputs                   
     let trimGraph (g:Graph) =
-        let _ = validate(g)
+        let _ = match tryValidate(g) with Choice1Of2 x -> x | Choice2Of2 ex -> failwith ex
         let outputs = g.Nodes |> Map.toSeq |> Seq.filter (snd>>isOutput) |> Seq.map fst |> Seq.toList
 
         let rec loop (acc,vstd,stack) ls =
@@ -309,11 +315,11 @@ module rec GraphOps =
             | (_::rest)::remain -> loop (acc,vstd,stack) (rest::remain)
             | []::remain ->  loop (acc,vstd,pop stack) remain
 
-        let reachable,_,_= loop (Set.empty,Set.empty,[]) [outputs]
+        let reachable,v,s= loop (Set.empty,Set.empty,[]) [outputs]
         let nodes = g.Nodes |> Map.filter (fun id _ -> reachable.Contains id)
         let conns = g.Conns |> List.filter (fun c->c.On && reachable.Contains c.From && reachable.Contains c.To)
         let g' = {Nodes=nodes; Conns=conns}                                                                                                    
-        let _ = validate(g')
+        let _ = match tryValidate(g') with Choice1Of2 x -> x | Choice2Of2 ex -> failwith ex
         g'
 
 

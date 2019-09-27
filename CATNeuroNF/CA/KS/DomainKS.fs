@@ -11,12 +11,19 @@ module rec DomainKS =
         let byFitness   = CAUtils.rankIndvs ca indvs // pareto rank individuals|> Array.sortBy (fun ind -> ind.Fitness.[0])
         let elites      = byFitness |> Array.take takeNum
         let toReplace   = byFitness |> Array.skip takeNum
-        let elites'     = elites |> Array.map (addNode cfg speciesType st)
+        let elites'     = elites |> Array.map (fun indv ->
+                                                let g = CAUtils.insertNode cfg speciesType st.DmState.NormNodeProb indv.Graph
+                                                match GraphOps.tryValidate g with
+                                                | Choice1Of2 _ -> {indv with Graph=g}
+                                                | Choice2Of2 ex -> printfn "domain invalid graph"; indv
+                                                )
 
         let reps' = toReplace |> Array.map (fun indv ->
             let topRnd = topP |> Array.item (RNG.Value.Next(topP.Length))
             let g = CAUtils.insertNode cfg speciesType st.DmState.NormNodeProb topRnd.Graph
-            {indv with Graph=g}
+            match GraphOps.tryValidate g with
+            | Choice1Of2 _ -> {indv with Graph=g}
+            | Choice2Of2 ex -> printfn "domain invalid graph"; indv
             )
 
         let indvs' = Array.append elites' reps' |> Array.sortBy (fun x->x.Id)
