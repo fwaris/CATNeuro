@@ -55,3 +55,15 @@ module Ext =
         | [],_              -> clct acc (List.rev l2) []
         | (_,[])::rest,_    -> clct acc rest l2
         | (b,x::r1)::rest,_ -> clct (x::acc) rest ((b,r1)::l2)
+
+    let pickle<'a> file (o:'a) =
+        let ser = MBrace.FsPickler.FsPickler.CreateXmlSerializer()
+        use strw = System.IO.File.CreateText(file)
+        ser.Serialize(strw,o)
+
+    let unpickle<'a> file =
+        let ser = MBrace.FsPickler.FsPickler.CreateXmlSerializer()
+        use strw = System.IO.File.OpenText file
+        let o = ser.Deserialize<'a>(strw)
+        o
+        

@@ -24,20 +24,23 @@ let styleEdge (e:Microsoft.Msagl.Drawing.Edge) =
     | :? bool as b when not b -> e.Attr.AddStyle(Microsoft.Msagl.Drawing.Style.Dotted)
     | _ -> ()
 
+let visGraph title (gr:Microsoft.Msagl.Drawing.Graph) = 
+    let gv = new Microsoft.Msagl.GraphViewerGdi.GViewer()
+    gr.Edges |> Seq.iter styleEdge
+    gv.Graph <- gr
+    let f = new System.Windows.Forms.Form()
+    f.Text <- title
+    f.SuspendLayout()
+    gv.Dock <- System.Windows.Forms.DockStyle.Fill
+    f.Controls.Add(gv)
+    gv.Invalidate()
+    gv.Update()
+    f.ResumeLayout()
+    f.Show()
+
 let showGraph title g  = 
-  let gv = new Microsoft.Msagl.GraphViewerGdi.GViewer()
   let gr = GraphDrawing.makeGraph g
-  gr.Edges |> Seq.iter styleEdge
-  gv.Graph <- gr
-  let f = new System.Windows.Forms.Form()
-  f.Text <- title
-  f.SuspendLayout()
-  gv.Dock <- System.Windows.Forms.DockStyle.Fill
-  f.Controls.Add(gv)
-  gv.Invalidate()
-  gv.Update()
-  f.ResumeLayout()
-  f.Show()
-
-
+  visGraph title gr
+    
+    
 

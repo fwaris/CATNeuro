@@ -14,14 +14,12 @@ module rec HistoryKS =
 
     let updateIndv cfg hsst (indv:Individual) =
         let rndIndv = hsst.Events.[RNG.Value.Next(hsst.Events.Length)]
-        let g' =
-            if rndIndv.Fitness.[0] > indv.Fitness.[0] then
-                GraphOps.toggleConnection cfg indv.Graph
-            else
-                GraphOps.toggleConnection cfg rndIndv.Graph
+        let g = if rndIndv.Fitness.[0] > indv.Fitness.[0] then indv.Graph else rndIndv.Graph
+        let g' = GraphOps.toggleConnection cfg g
         match GraphOps.tryValidate g' with
         | Choice1Of2 _ -> {indv with Graph=g'}
-        | Choice2Of2 e -> printfn "HistoryKS %s" e; indv
+        | Choice2Of2 e -> printfn "HistoryKS %s" e; 
+                          indv
 
 
     let updateState ca hsst topP =
