@@ -86,11 +86,11 @@ module CAUtils =
         n + k
         
 
-    let initState() =
+    let initState (pop:Population) =
         {
             Gen = 0
             ShState = {
-                        FitnessAtInit   = Map.empty
+                        FitnessAtInit   = pop.Individuals |> Array.map (fun i->i.Id,i.Fitness) |> Map.ofArray
                         GensSinceInit   = 0
                         CoopGens        = 5
                       }            

@@ -155,7 +155,7 @@ module rec CARunner =
 
         let state = 
             ca'.Populations 
-            |> Array.map(fun x->x.Species, CAUtils.initState())
+            |> Array.map(fun pop -> pop.Species, CAUtils.initState pop)
             |> Map.ofArray
 
         {CA=ca'; Count=0; Best=[||]; State=state}

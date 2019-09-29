@@ -16,7 +16,7 @@ module rec HistoryKS =
         let rndIndv = hsst.Events.[RNG.Value.Next(hsst.Events.Length)]
         let g = if rndIndv.Fitness.[0] > indv.Fitness.[0] then indv.Graph else rndIndv.Graph
         let g' = GraphOps.toggleConnection cfg g
-        match GraphOps.tryValidate g' with
+        match GraphOps.tryTrimGraph g' with
         | Choice1Of2 _ -> {indv with Graph=g'}
         | Choice2Of2 e -> printfn "HistoryKS %s" e; 
                           indv
