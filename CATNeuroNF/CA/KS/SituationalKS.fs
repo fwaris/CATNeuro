@@ -13,7 +13,11 @@ module rec SituationalKS =
             indvs
             |> Array.map (fun indv -> 
                 let g = GraphOps.addConnection cfg indv.Graph
-                {indv with Graph=g})
+                let g' = 
+                    match GraphOps.tryTrimGraph g with
+                    | Choice1Of2 _ -> g
+                    | Choice2Of2 ex -> printfn "Situational empty graph %s" ex; indv.Graph
+                {indv with Graph=g'})
         st,indvs'
 
 

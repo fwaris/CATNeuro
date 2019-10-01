@@ -83,7 +83,7 @@ module CAUtils =
     let sampleDensity bandwidth (mass:float[]) =  
         let n = mass.[RNG.Value.Next(mass.Length)]
         let k = GAUSS 0.0 bandwidth
-        n + k
+        n + k |> max 2.
         
 
     let initState (pop:Population) =

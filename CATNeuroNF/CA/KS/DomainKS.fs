@@ -29,11 +29,6 @@ module rec DomainKS =
         let indvs' = Array.append elites' reps' |> Array.sortBy (fun x->x.Id)
         st,indvs'
 
-    ///add new node to the individual
-    let addNode cfg speciesType st (indv:Individual) = 
-        { indv with
-            Graph = CAUtils.insertNode cfg speciesType st.DmState.NormNodeProb indv.Graph
-        }      
 
 (*
 domain understands the rules

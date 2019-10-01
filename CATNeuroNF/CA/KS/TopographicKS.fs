@@ -17,7 +17,11 @@ module rec TopographicKS =
                 let cntrd = CATProb.spinWheel tpst.SpinWheel 
                 let p2 = cntrd.Best
                 let g = GraphOps.crossover cfg p2.Graph indv.Graph
-                {indv with Graph=g})
+                let g' = 
+                    match GraphOps.tryTrimGraph g with
+                    | Choice1Of2 _ -> g
+                    | Choice2Of2 ex -> printfn "Topographical empty graph %s" ex; indv.Graph
+                {indv with Graph=g'})
         st,indvs'
 
 
