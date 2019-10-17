@@ -3,7 +3,8 @@ open CATProb
 open Ext
 open BeliefSpace
 
-type TimeStep= {CA:CA ; Best:NetworkAssembly[]; Count:int; State:Map<SpeciesType,CAState>}
+type EvaluatedAssembly = {Assembly:NetworkAssembly; Fit:float[]}
+type TimeStep= {CA:CA ; Best:EvaluatedAssembly[]; Count:int; State:Map<SpeciesType,CAState>}
 
 module rec CARunner =
     let isBlueprint = function Blueprint _  -> true | _ -> false 
@@ -26,7 +27,7 @@ module rec CARunner =
         {blueprint with Nodes=nodes'}        
 
     //assemble a single blueprint with randomly selected individuls from module species
-    let assembleNetwork gen (spcsMap:Map<int,Population>) (blueprint:Individual) =
+    let assembleNetwork meta (spcsMap:Map<int,Population>) (blueprint:Individual) =
     
         //species used by blueprint
         let speciesPops = 
@@ -45,7 +46,7 @@ module rec CARunner =
         let assembly' = GraphOps.trimGraph assembly
         let replaceMents = selIndvs|>Map.map(fun sid ind->{SpeciesId=sid; IndvidualId=ind.Id}) |> Map.toSeq |> Seq.map snd |> Seq.toArray
         let model = {Graph=assembly'; Parms=parms}
-        {BlueprintId = blueprint.Id; Model=model; Meta={Gen=gen}; ModuleReplacements=replaceMents }
+        {BlueprintId = blueprint.Id; Model=model; Meta=meta; ModuleReplacements=replaceMents }
 
     let separatePop pops = 
         let bprints = pops |> Array.find (fun x -> isBlueprint x.Species)
@@ -102,12 +103,14 @@ module rec CARunner =
 
     ///no async for easier debugging
     let debugStep (st:TimeStep) =
-        let networks = assembleNetworks st.Count st.CA
+        let meta = {Gen=st.Count; BestFit= st.Best |> Array.tryHead |> Option.map (fun na->na.Fit.[0])}
+        let networks = assembleNetworks meta st.CA
         let evaluated = networks |> Array.map (st.CA.Evaluator) 
         let nmap = networks |> Array.map (fun x->x.BlueprintId,x) |> Map.ofArray
+        let evalMap = Map.ofArray evaluated
         let ca' = attributeFitness st.CA networks evaluated
         let state',ca'' = stepPopulations st.State ca'
-        let rankedNetworks = st.CA.ParetoRank evaluated |> Array.map (fun i->nmap.[i])
+        let rankedNetworks = st.CA.ParetoRank evaluated |> Array.map (fun i->{Assembly=nmap.[i]; Fit=evalMap.[i]})
         {st with 
             Best=rankedNetworks |> Array.truncate 5; 
             CA = ca''
@@ -118,7 +121,8 @@ module rec CARunner =
      ///single timestep 
     let step (st:TimeStep) =
         async {
-            let networks = assembleNetworks st.Count st.CA
+            let meta = {Gen=st.Count; BestFit= st.Best |> Array.tryHead |> Option.map (fun na->na.Fit.[0])}
+            let networks = assembleNetworks meta st.CA
             let! evaluated = 
                 networks 
                 |> Array.map (fun n -> 
@@ -133,9 +137,10 @@ module rec CARunner =
                        }) 
                 |> Async.Parallel 
             let nmap = networks |> Array.map (fun x->x.BlueprintId,x) |> Map.ofArray
+            let evalMap = Map.ofArray evaluated
             let ca' = attributeFitness st.CA networks evaluated
             let state',ca'' = stepPopulations st.State ca'
-            let rankedNetworks = st.CA.ParetoRank evaluated |> Array.map (fun i->nmap.[i])
+            let rankedNetworks = st.CA.ParetoRank evaluated |> Array.map (fun i->{Assembly=nmap.[i]; Fit=evalMap.[i]})
             return 
                 {st with 
                     Best=rankedNetworks |> Array.truncate 5; 

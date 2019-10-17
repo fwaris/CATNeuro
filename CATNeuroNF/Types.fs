@@ -49,7 +49,7 @@ type Population = {Species:SpeciesType; Individuals:Individual[]; Cfg:Cfg}
 type SpeciesIndv = {SpeciesId:int; IndvidualId:int}
 
 type AssembledModel = {Parms:LearningParms; Graph:Graph} 
-type AssemblyMeta = {Gen:int}
+type AssemblyMeta = {Gen:int; BestFit:float option}
 
 type NetworkAssembly = {BlueprintId:int; Meta:AssemblyMeta;  Model:AssembledModel; ModuleReplacements:SpeciesIndv[] }
 
