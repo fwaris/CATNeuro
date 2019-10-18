@@ -223,3 +223,11 @@ module CAUtils =
             Array.append ordered (unevaled |> Array.map fst)
 
     
+    let scaledPareto (xs:(int*float[])[]) : int[] =
+        let xs' = xs |> Array.sortBy (fun (_,fs) -> fs.[0])
+        let best = Array.head xs'
+        let rest = Array.tail xs'
+        let scaledRest = rest |> Array.map (fun (i,fs)->i,fs.[0]/fs.[1])
+        let sorted = scaledRest |> Array.sortBy (fun (i,sf) -> sf)
+        let rslt = Array.append [|fst best|] (sorted |> Array.map fst)
+        rslt
