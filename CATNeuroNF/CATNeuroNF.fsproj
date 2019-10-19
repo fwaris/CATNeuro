@@ -43,6 +43,8 @@
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="ObservableExt.fs" />
+    <Compile Include="Metrics.fs" />
     <Compile Include="CATProb.fs" />
     <Compile Include="KMeans.fs" />
     <Compile Include="Extensions.fs" />

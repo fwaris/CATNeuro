@@ -105,17 +105,25 @@ module rec CARunner =
     let debugStep (st:TimeStep) =
         let meta = {Gen=st.Count; BestFit= st.Best |> Array.tryHead |> Option.map (fun na->na.Fit.[0])}
         let networks = assembleNetworks meta st.CA
+        let ntwrkMap = networks |> Array.map (fun x->x.BlueprintId,x) |> Map.ofArray
         let evaluated = networks |> Array.map (st.CA.Evaluator) 
-        let nmap = networks |> Array.map (fun x->x.BlueprintId,x) |> Map.ofArray
-        let evalMap = Map.ofArray evaluated
         let ca' = attributeFitness st.CA networks evaluated
         let state',ca'' = stepPopulations st.State ca'
-        let rankedNetworks = st.CA.ParetoRank evaluated |> Array.map (fun i->{Assembly=nmap.[i]; Fit=evalMap.[i]})
+
+        let toRank = 
+            Array.append (st.Best) (evaluated |> Array.map (fun (i,f) ->{Assembly=ntwrkMap.[i]; Fit=f}))
+            |> Array.mapi (fun i m ->i,m)
+            |> Map.ofArray
+
+        let unrankedFit = toRank |> Map.toArray |> Array.map (fun (i,ea) -> i, ea.Fit)
+        let rankedFit = ca''.ParetoRank unrankedFit
+        let rankedAsmbls = rankedFit |> Array.map (fun i -> toRank.[i])
+        let newBest = rankedAsmbls |> Array.truncate 5        
         {st with 
-            Best=rankedNetworks |> Array.truncate 5; 
-            CA = ca''
-            Count=st.Count+1
-            State = state'
+            Best    = newBest 
+            CA      = ca''
+            Count   = st.Count+1
+            State   = state'
         }
     
      ///single timestep 

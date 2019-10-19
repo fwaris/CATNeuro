@@ -3,7 +3,8 @@ open Ext
 open FSharp.Reflection
 open CATProb
 
-module rec NormativeKS =         
+module rec NormativeKS =     
+    let META_INV = -1
     let acceptance ca cfg species (st,topG) =
         let nmst = st.NmState
         let nmst' = updateState ca cfg nmst topG
@@ -23,7 +24,27 @@ module rec NormativeKS =
             |> Seq.map (fun (i,n,pm) -> updateNode cfg n pm)
         let gNodes = (indv.Graph.Nodes,nodes') ||> Seq.fold (fun acc n -> acc |> Map.add n.Id n)
         let g = {indv.Graph with Nodes=gNodes}
-        {indv with Graph=g}
+        let indv' = updateMeta cfg nmst indv
+        {indv' with Graph=g}
+
+    let updateMeta cfg nmst indv : Individual =
+        match indv.IndvType with
+        | BlueprintIndv lr -> let lr' = updateMetaParm cfg nmst lr  
+                              {indv with IndvType=BlueprintIndv lr'}
+        | _                -> indv
+
+    let clamp mn mx v = v |> max mn |> min mx
+
+    let updateMetaParm cfg nmst lr =
+        let lr' =
+            nmst.Norms.[META_INV] 
+            |> Map.tryFind PLearnRate
+            |> Option.map mass  
+            |> Option.bind (fun xs->if Array.length xs >= 2 then Some(xs) else None) //don't use distribution if only 1 point in set
+            |> Option.map (CAUtils.sampleDensity 3.0)   //sample from kernel density estimate
+            |> Option.defaultValue (CATProb.GAUSS lr.Rate 1.0 |> clamp cfg.LearnRange.Lo cfg.LearnRange.Hi)     //sample from gaussian
+        {lr with Rate=lr'}
+             
 
     let updateState ca cfg st (topP:Individual[]) =
         //new high perf indvs
@@ -39,6 +60,10 @@ module rec NormativeKS =
                                         |> List.map (fun c->c.Innovation, indv.Graph.Nodes.[c.To].Type))  //innov#, nodeType
             |> Seq.choose (fun (i,n) -> match n with Cell c -> Some (i,c) | _ -> None)                    //cells
             |> Seq.collect (fun (i,n) -> nodeParms cfg n |> List.map (fun (p,d) -> (i,p),d))              //extract parms from cells
+
+            |> Seq.append (highPerf |> Seq.choose (fun indv -> match indv.IndvType with 
+                                                               | BlueprintIndv lr -> Some((META_INV,PLearnRate),Cont (float lr.Rate)) 
+                                                               | _ -> None))
             |> Seq.groupBy fst                                                                            //group by innov#
             |> Seq.map (fun ((i,p),xs) -> i,p, xs |> Seq.map snd |> Seq.toList |> aggregateParms)         //aggregate group to get parm distributions
             |> Seq.choose (fun (i,p,agg) -> agg |> Option.map(fun agg -> i,(p,agg)))                      //filter None

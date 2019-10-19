@@ -19,7 +19,7 @@ type SiState = {Exemplars:Individual[]; SpinWheel:(Graph*float)[]}
 
 type CaseWheel = (UnionCaseInfo*float)[]
 type IntWheel = (int*float)[]
-type ParmType = PDims | PActivation | PBias | PSpecies | PNorm
+type ParmType = PDims | PActivation | PBias | PSpecies | PNorm | PLearnRate
 type ClassInfo = {TotalClasses:int; Refs:int list}
 type DistVal = Case of UnionCaseInfo | Cont of float | Class of ClassInfo
 type Dist = Cases of CaseWheel | Density of float[] | Classes of IntWheel
@@ -95,7 +95,7 @@ module CAUtils =
                         CoopGens        = 5
                       }            
             HsState = {Events=[]; Window=20}
-            DmState  = {EliteFrac=0.3; NormNodeProb=0.1}
+            DmState  = {EliteFrac=0.5; NormNodeProb=0.1}
             NmState = {
                         TopIndv = Array.empty
                         MaxIndv = 50
@@ -227,7 +227,8 @@ module CAUtils =
         let xs' = xs |> Array.sortBy (fun (_,fs) -> fs.[0])
         let best = Array.head xs'
         let rest = Array.tail xs'
-        let scaledRest = rest |> Array.map (fun (i,fs)->i,fs.[0]/fs.[1])
+
+        let scaledRest = rest |> Array.map (fun (i,fs)->i,(0.5*log(fs.[0])) + log(fs.[1]))
         let sorted = scaledRest |> Array.sortBy (fun (i,sf) -> sf)
         let rslt = Array.append [|fst best|] (sorted |> Array.map fst)
         rslt
