@@ -45,7 +45,8 @@ module rec CARunner =
         let assembly = blueprint.Graph |> replaceWith (selIndvs |> Map.map (fun _ x->x.Graph |> GraphOps.trimGraph))
         let assembly' = GraphOps.trimGraph assembly
         let replaceMents = selIndvs|>Map.map(fun sid ind->{SpeciesId=sid; IndvidualId=ind.Id}) |> Map.toSeq |> Seq.map snd |> Seq.toArray
-        let model = {Graph=assembly'; Parms=parms}
+        let model = assembly'
+        let meta = {meta with Parms=parms}
         {BlueprintId = blueprint.Id; Model=model; Meta=meta; ModuleReplacements=replaceMents }
 
     let separatePop pops = 
@@ -54,9 +55,9 @@ module rec CARunner =
         bprints,spcsMap
 
     ///assemble blueprints into networks
-    let assembleNetworks gen (ca:CA) =
+    let assembleNetworks meta (ca:CA) =
         let bprints,spcsMap = separatePop ca.Populations 
-        bprints.Individuals |> Array.map (assembleNetwork gen spcsMap)
+        bprints.Individuals |> Array.map (assembleNetwork meta spcsMap)
     
     ///attribute fitness to blueprint and module individuals after evaluation
     let attributeFitness (ca:CA) (networks:NetworkAssembly[]) (evaluated:((int*float[])[])) =
@@ -103,10 +104,15 @@ module rec CARunner =
 
     ///no async for easier debugging
     let debugStep (st:TimeStep) =
-        let meta = {Gen=st.Count; BestFit= st.Best |> Array.tryHead |> Option.map (fun na->na.Fit.[0])}
+        Metrics.NewGen (st.Count)|> Metrics.postAll
+        let meta = {
+                        Gen     = st.Count
+                        BestFit = st.Best |> Array.tryHead |> Option.map (fun na->na.Fit.[0])
+                        Parms   = LearningParms.Default
+                    }
         let networks = assembleNetworks meta st.CA
-        let ntwrkMap = networks |> Array.map (fun x->x.BlueprintId,x) |> Map.ofArray
         let evaluated = networks |> Array.map (st.CA.Evaluator) 
+        let ntwrkMap = networks |> Array.map (fun x->x.BlueprintId,x) |> Map.ofArray
         let ca' = attributeFitness st.CA networks evaluated
         let state',ca'' = stepPopulations st.State ca'
 
@@ -129,7 +135,12 @@ module rec CARunner =
      ///single timestep 
     let step (st:TimeStep) =
         async {
-            let meta = {Gen=st.Count; BestFit= st.Best |> Array.tryHead |> Option.map (fun na->na.Fit.[0])}
+            Metrics.NewGen (st.Count)|> Metrics.postAll
+            let meta = {
+                            Gen     = st.Count
+                            BestFit = st.Best |> Array.tryHead |> Option.map (fun na->na.Fit.[0])
+                            Parms   = LearningParms.Default
+                        }
             let networks = assembleNetworks meta st.CA
             let! evaluated = 
                 networks 
@@ -144,14 +155,23 @@ module rec CARunner =
                             return ft
                        }) 
                 |> Async.Parallel 
-            let nmap = networks |> Array.map (fun x->x.BlueprintId,x) |> Map.ofArray
-            let evalMap = Map.ofArray evaluated
+
+            let ntwrkMap = networks |> Array.map (fun x->x.BlueprintId,x) |> Map.ofArray
             let ca' = attributeFitness st.CA networks evaluated
             let state',ca'' = stepPopulations st.State ca'
-            let rankedNetworks = st.CA.ParetoRank evaluated |> Array.map (fun i->{Assembly=nmap.[i]; Fit=evalMap.[i]})
+
+            let toRank = 
+                Array.append (st.Best) (evaluated |> Array.map (fun (i,f) ->{Assembly=ntwrkMap.[i]; Fit=f}))
+                |> Array.mapi (fun i m ->i,m)
+                |> Map.ofArray
+
+            let unrankedFit = toRank |> Map.toArray |> Array.map (fun (i,ea) -> i, ea.Fit)
+            let rankedFit = ca''.ParetoRank unrankedFit
+            let rankedAsmbls = rankedFit |> Array.map (fun i -> toRank.[i])
+            let newBest = rankedAsmbls |> Array.truncate 5        
             return 
                 {st with 
-                    Best=rankedNetworks |> Array.truncate 5; 
+                    Best=newBest 
                     CA = ca''
                     Count=st.Count+1
                     State = state'

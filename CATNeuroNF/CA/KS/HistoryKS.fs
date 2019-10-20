@@ -21,7 +21,6 @@ module rec HistoryKS =
         | Choice2Of2 e -> printfn "HistoryKS %s" e; 
                           indv
 
-
     let updateState ca hsst topP =
         let cndateBest = CAUtils.rankIndvs ca topP |> Array.head
         let newBest = 

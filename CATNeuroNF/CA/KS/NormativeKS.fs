@@ -4,10 +4,28 @@ open FSharp.Reflection
 open CATProb
 
 module rec NormativeKS =     
+    let logNorms species nmst = 
+        let mp = 
+            nmst.Norms 
+            |> Map.toArray 
+            |> Array.collect(fun (i,m) -> m 
+                                         |> Map.toArray 
+                                         |> Array.map (fun (p,d)->  
+                                            let pstr = sprintf "%A" p
+                                            match d with
+                                            | Density _  -> Metrics.MDensity (i,pstr,[||])
+                                            | Cases _     -> Metrics.MCat (i,pstr,[||])
+                                            | Classes _   -> Metrics.MCat (i,pstr,[||])
+                                         ))
+        (MUtils.popId species,mp) |> Metrics.Norms |> Metrics.postAll
+        
+
+
     let META_INV = -1
     let acceptance ca cfg species (st,topG) =
         let nmst = st.NmState
         let nmst' = updateState ca cfg nmst topG
+        logNorms species nmst'
         let st' = {st with NmState=nmst'}
         (st',topG)
 

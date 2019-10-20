@@ -48,10 +48,9 @@ type Population = {Species:SpeciesType; Individuals:Individual[]; Cfg:Cfg}
 
 type SpeciesIndv = {SpeciesId:int; IndvidualId:int}
 
-type AssembledModel = {Parms:LearningParms; Graph:Graph} 
-type AssemblyMeta = {Gen:int; BestFit:float option}
+type AssemblyMeta = {Gen:int; BestFit:float option; Parms:LearningParms;}
 
-type NetworkAssembly = {BlueprintId:int; Meta:AssemblyMeta;  Model:AssembledModel; ModuleReplacements:SpeciesIndv[] }
+type NetworkAssembly = {BlueprintId:int; Meta:AssemblyMeta;  Model:Graph; ModuleReplacements:SpeciesIndv[] }
 
 type Settings = {TakeFraction: float} with static member Default = {TakeFraction=0.25}
 

@@ -3,13 +3,13 @@ open Ext
 open CATProb
 
 module rec DomainKS = 
-    let acceptance ca cfg species (st,topG) =
+    let acceptance ca cfg speciesType (st,topG) =
         (st,topG)
 
     let insertNode cfg speciesType st (indv:Individual) =
         let g = CAUtils.insertNode cfg speciesType st.DmState.NormNodeProb indv.Graph
         match GraphOps.tryValidate g with
-        | Choice1Of2 _  ->  Metrics.NodeAdd 1 |> Metrics.postAll
+        | Choice1Of2 _  ->  (MUtils.popId speciesType,1) |> Metrics.NodeAdd |> Metrics.postAll
                             {indv with Graph=g}
         | Choice2Of2 ex -> printfn "domain invalid graph"; indv
 

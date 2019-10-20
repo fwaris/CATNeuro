@@ -56,9 +56,13 @@ type CAState =
         SiState : SiState
     }
 
+module MUtils =
+    let popId = function Blueprint -> Metrics.B | Module i -> Metrics.M i
+
 module CAUtils =
 
     let HIGH_VAL = 1e10 //max value of fitness
+
 
     ///select a random Knowledge, excluding 'ex' if given
     let randKS (ex:Knowledge option) : Knowledge = 
