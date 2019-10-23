@@ -63,7 +63,8 @@ let dmpC g = g.Conns |> List.iter (printConn >> printfn "%s" )
 let testToggle() =
     let gt1 = toggleConnection cfg g
     gt1 = gt1 
-    showGraph "toggle connection"  gt1
+    showGraph "before toggle connection" g
+    showGraph "after toggle connection"  gt1
 
     let gt2 = toggleConnection cfg gt1
 
@@ -81,7 +82,8 @@ let testAddConn() =
     let g1 = addConnection cfg g
     let g2 = addConnection cfg g1
     let g3 = addConnection cfg g2
-    showGraph "add connection" g1
+    showGraph "before add connection" g
+    showGraph "after add connection" g1
     showGraph "g" g
     showGraph "g2" g2
     showGraph "g3" g3
@@ -93,8 +95,8 @@ let testAddConn() =
 let testAddNode() =
     let g1 = addNode cfg g
     let g2 = addNode cfg g1
-    showGraph "g" g
-    showGraph "add node" g1
+    showGraph "before add node" g
+    showGraph "after add node" g1
     showGraph "g2" g2
     let gn = (g,[1 .. 10]) ||> List.fold (fun x i -> printfn "i=%d" i; addNode cfg x)
     showGraph "gn" gn

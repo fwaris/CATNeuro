@@ -61,7 +61,6 @@ module rec KDStagHunt =
         st',pop'
 
     let fitnessById (i:Individual) = i.Id, i.Fitness
-                    
     ///distribute knowledge for cooperative phase
     let cooperativeDist ca st _ (pop:Individual[]) = //assume pop is sorted in order of index
         let pop' =
@@ -70,21 +69,17 @@ module rec KDStagHunt =
                 let frnds = ca.Network pop indv.Id 
                 let all = Array.append frnds [|indv|]
                 let ranked = ca.ParetoRank (all |> Array.map fitnessById)
-                let bestFrnd = all |> Array.find (fun x->x.Id=ranked.[0])
-                let wrstFrnd = all |> Array.find (fun x->x.Id=Array.last ranked)
+                let lowR = 0.0
+                let topR = float (ranked.Length - 1)
+                let myR = ranked |> Array.findIndex(fun id->id=indv.Id) |> float
 
-                let bestFit = bestFrnd.Fitness.[0] //used primary objective for placement
-                let wrstFit = wrstFrnd.Fitness.[0] + 1.0
-                let myFit = indv.Fitness.[0]
-
-                if isValidNum bestFit && isValidNum wrstFit then
-                    let scaledRank = scaler ksRange (bestFit,wrstFit) myFit //best is lower as its usually loss
-                    let newKS = defaultKSOrder.[int scaledRank |> min (defaultKSOrder.Length - 1)]
-                    {indv with KS=newKS}
-                else
-                    indv)
+                let scaledRank = scaler ksRange (lowR,topR) myR //best is lower as its usually loss
+                let newKS = defaultKSOrder.[int scaledRank |> min (defaultKSOrder.Length - 1)]
+                {indv with KS=newKS} 
+               )
         let st' = {st with ShState = {st.ShState with GensSinceInit=st.ShState.GensSinceInit+1}}
         st',pop'
+                    
 
     /// if an individual has Domain KS but has reached
     /// max nodes then switch KS 

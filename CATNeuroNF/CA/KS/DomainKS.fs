@@ -22,12 +22,11 @@ module rec DomainKS =
 
         let reps' = toReplace |> Array.map (fun indv ->
             let topRnd = topP |> Array.item (RNG.Value.Next(topP.Length))
-            insertNode cfg speciesType st topRnd)
-
+            let indv' = insertNode cfg speciesType st topRnd
+            {indv' with Id=indv.Id}) //preserve id 
 
         let indvs' = Array.append elites' reps' |> Array.sortBy (fun x->x.Id)
         st,indvs'
-
 
 (*
 domain understands the rules
