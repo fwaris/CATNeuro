@@ -1,28 +1,35 @@
 ﻿namespace CATNeuro
 open Ext
 open CATProb
+open CAEvolve
 
 module rec DomainKS = 
+    let policy =
+        [|
+            Crossover           , 0.1
+            AddNode             , 0.5
+            AddConnection       , 0.2
+            MutateParm          , 0.1
+            ToggleConnection    , 0.1
+        |]
+        |> createWheel
+
     let acceptance ca cfg speciesType (st,topG) =
         (st,topG)
-
-    let insertNode cfg speciesType st (indv:Individual) =
-        let g = CAUtils.insertNode cfg speciesType st.DmState.NormNodeProb indv.Graph
-        match GraphOps.tryValidate g with
-        | Choice1Of2 _  ->  (MUtils.popId speciesType,1) |> Metrics.NodeAdd |> Metrics.postAll
-                            {indv with Graph=g}
-        | Choice2Of2 ex -> printfn "domain invalid graph"; indv
 
     let influence ca cfg speciesType st  (topP:Individual[]) (indvs:Individual[]) = 
         let takeNum     = (float indvs.Length) * st.DmState.EliteFrac |> int
         let byFitness   = CAUtils.rankIndvs ca indvs // pareto rank individuals|> Array.sortBy (fun ind -> ind.Fitness.[0])
         let elites      = byFitness |> Array.take takeNum
         let toReplace   = byFitness |> Array.skip takeNum
-        let elites'     = elites |> Array.map (insertNode cfg speciesType st)
+
+        let elites' =  elites |> Array.map (fun elite ->
+                                    let influencer = topP.[RNG.Value.Next(topP.Length)]
+                                    evolveIndv cfg st speciesType policy (Some influencer) elite)
 
         let reps' = toReplace |> Array.map (fun indv ->
             let topRnd = topP |> Array.item (RNG.Value.Next(topP.Length))
-            let indv' = insertNode cfg speciesType st topRnd
+            let indv' = evolveIndv cfg st speciesType policy (Some indv) topRnd
             {indv' with Id=indv.Id}) //preserve id 
 
         let indvs' = Array.append elites' reps' |> Array.sortBy (fun x->x.Id)

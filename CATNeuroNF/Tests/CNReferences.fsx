@@ -13,6 +13,7 @@
 #load @"..\Graph\GraphOps.fs"
 #load @"..\Graph\GraphDiag.fs"
 #load @"..\CA\CAUtils.fs"
+#load @"..\CA\CAEvolve.fs"
 #load @"..\CA\KDStagHunt.fs"
 #load @"..\CA\KS\DomainKS.fs"
 #load @"..\CA\KS\NormativeKS.fs"

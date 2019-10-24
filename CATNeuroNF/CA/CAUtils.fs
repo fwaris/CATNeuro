@@ -56,6 +56,8 @@ type CAState =
         SiState : SiState
     }
 
+type Mutation = MutateParm | ToggleConnection | AddConnection | AddNode | Crossover
+
 module MUtils =
     let popId = function Blueprint -> Metrics.B | Module i -> Metrics.M i
 
@@ -237,3 +239,4 @@ module CAUtils =
         let sorted = scaledRest |> Array.sortBy (fun (i,sf) -> sf)
         let rslt = Array.append (best |> Array.map fst) (sorted  |> Array.map fst)
         rslt
+

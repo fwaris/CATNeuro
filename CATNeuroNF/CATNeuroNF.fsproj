@@ -52,6 +52,7 @@
     <Compile Include="Graph\GraphOps.fs" />
     <Compile Include="Graph\GraphDiag.fs" />
     <Compile Include="CA\CAUtils.fs" />
+    <Compile Include="CA\CAEvolve.fs" />
     <Compile Include="CA\KDStagHunt.fs" />
     <Compile Include="CA\KS\DomainKS.fs" />
     <Compile Include="CA\KS\NormativeKS.fs" />

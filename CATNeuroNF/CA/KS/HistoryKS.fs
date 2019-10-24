@@ -1,7 +1,18 @@
 ﻿namespace CATNeuro
 open CATProb
+open CAEvolve
 
-module rec HistoryKS = 
+module rec HistoryKS =
+    let policy =
+        [|
+            Crossover           , 0.05
+            AddNode             , 0.05
+            AddConnection       , 0.2
+            MutateParm          , 0.2
+            ToggleConnection    , 0.5
+        |]
+        |> createWheel
+
     let acceptance ca cfg species (st,topG:Individual[]) =
         let hsst = st.HsState
         let hsst' = updateState ca hsst topG
@@ -9,18 +20,16 @@ module rec HistoryKS =
         (st',topG)
 
     let influence ca cfg speciesType st  (topP:Individual[]) (indvs:Individual[]) = 
-        let indvs' = indvs |> Array.map (updateIndv cfg st.HsState)
+        let indvs' = indvs |> Array.map (updateIndv cfg speciesType st)
         st,indvs'
 
-    let updateIndv cfg hsst (indv:Individual) =
+    let updateIndv cfg speciesType st (indv:Individual) =
+        let hsst = st.HsState
         let rndIndv = hsst.Events.[RNG.Value.Next(hsst.Events.Length)]
-        let g = if rndIndv.Fitness.[0] > indv.Fitness.[0] then indv.Graph else rndIndv.Graph
-        let g' = GraphOps.toggleConnection cfg g
-        match GraphOps.tryTrimGraph g' with
-        | Choice1Of2 _ -> {indv with Graph=g'}
-        | Choice2Of2 e -> printfn "HistoryKS %s" e; 
-                          indv
-
+        let selIndv = if rndIndv.Fitness.[0] > indv.Fitness.[0] then indv else {rndIndv with Id=indv.Id}
+        let influencer = if selIndv = rndIndv then indv else rndIndv
+        evolveIndv cfg st speciesType policy (Some influencer) selIndv
+        
     let updateState ca hsst topP =
         let cndateBest = CAUtils.rankIndvs ca topP |> Array.head
         let newBest = 

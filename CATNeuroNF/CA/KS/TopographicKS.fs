@@ -1,7 +1,18 @@
 ﻿namespace CATNeuro
 open System.Threading.Tasks
+open CAEvolve
+open CATProb
 
 module rec TopographicKS = 
+    let policy =
+        [|
+            Crossover           , 0.5
+            AddNode             , 0.2
+            AddConnection       , 0.2
+            MutateParm          , 0.05
+            ToggleConnection    , 0.05
+        |]
+        |> createWheel
 
     let acceptance ca cfg species (st,topG) =
         let tst = st.TpState
@@ -16,12 +27,7 @@ module rec TopographicKS =
             |> Array.map (fun indv -> 
                 let cntrd = CATProb.spinWheel tpst.SpinWheel 
                 let p2 = cntrd.Best
-                let g = GraphOps.crossover cfg p2.Graph indv.Graph
-                let g' = 
-                    match GraphOps.tryTrimGraph g with
-                    | Choice1Of2 _ -> g
-                    | Choice2Of2 ex -> printfn "Topographical empty graph %s" ex; indv.Graph
-                {indv with Graph=g'})
+                evolveIndv cfg st speciesType policy (Some p2) indv)
         st,indvs'
 
 

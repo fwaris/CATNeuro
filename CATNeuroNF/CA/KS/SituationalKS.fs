@@ -1,25 +1,34 @@
 ﻿namespace CATNeuro
 open Ext
-
+open CAEvolve
+open CATProb
+                   
 module rec SituationalKS = 
+    let policy =
+        [|
+            Crossover           , 0.05
+            AddNode             , 0.05
+            AddConnection       , 0.5
+            MutateParm          , 0.2
+            ToggleConnection    , 0.2
+        |]
+        |> createWheel
+
     let acceptance ca cfg species (st,topG:Individual[]) =
         let sist = st.SiState
         let sist' = updateState ca sist topG
         let st' = {st with SiState=sist'}
         (st',topG)
 
-    let influence ca cfg speciesType st  (topP:Individual[]) (indvs:Individual[]) = 
+    let influence ca cfg speciesType st (topP:Individual[]) (indvs:Individual[]) = 
         let indvs' =
-            indvs
+            indvs 
             |> Array.map (fun indv -> 
-                let g = GraphOps.addConnection cfg indv.Graph
-                let g' = 
-                    match GraphOps.tryTrimGraph g with
-                    | Choice1Of2 _ -> g
-                    | Choice2Of2 ex -> printfn "Situational empty graph %s" ex; indv.Graph
-                {indv with Graph=g'})
+                let g = CATProb.spinWheel st.SiState.SpinWheel
+                let indv' = {indv with Graph=g}
+                let influencer = indv
+                evolveIndv cfg st speciesType policy (Some influencer) indv')                
         st,indvs'
-
 
     let MAX_EXEMPLARS = 15
 
@@ -72,10 +81,6 @@ module rec SituationalKS =
         best::(clct [] binned [])    
 
         
-    
-
-    
-
 (*
 Situational tracks examplars 
 and performs add connection mutation 

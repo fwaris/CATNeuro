@@ -2,8 +2,19 @@
 open Ext
 open FSharp.Reflection
 open CATProb
+open CAEvolve
 
 module rec NormativeKS =     
+    let policy =
+        [|
+            //Crossover           , 0.1
+            //AddNode             , 0.1
+            AddConnection       , 0.1
+            MutateParm          , 0.7
+            ToggleConnection    , 0.2
+        |]
+        |> createWheel
+
     let logNorms species nmst = 
         let mp = 
             nmst.Norms 
@@ -19,9 +30,6 @@ module rec NormativeKS =
                                          ))
         (MUtils.popId species,mp) |> Metrics.Norms |> Metrics.postAll
         
-
-
-    let META_INV = -1
     let acceptance ca cfg species (st,topG) =
         let nmst = st.NmState
         let nmst' = updateState ca cfg nmst topG
@@ -31,38 +39,8 @@ module rec NormativeKS =
 
     let influence ca cfg speciesType st  (topP:Individual[]) (indvs:Individual[]) = 
         let nmst = st.NmState
-        let indvs' = indvs |> Array.map (influenceIndv cfg nmst)
+        let indvs' = indvs |> Array.map (evolveIndv cfg st speciesType policy None)
         st,indvs'
-
-    let influenceIndv cfg nmst indv =
-        let nodes' = 
-            indv.Graph.Conns
-            |> Seq.map (fun c -> c.Innovation, indv.Graph.Nodes.[c.To])
-            |> Seq.choose (fun (innovNum,n) -> nmst.Norms |> Map.tryFind innovNum |> Option.map (fun pm->innovNum,n,pm))
-            |> Seq.map (fun (i,n,pm) -> updateNode cfg n pm)
-        let gNodes = (indv.Graph.Nodes,nodes') ||> Seq.fold (fun acc n -> acc |> Map.add n.Id n)
-        let g = {indv.Graph with Nodes=gNodes}
-        let indv' = updateMeta cfg nmst indv
-        {indv' with Graph=g}
-
-    let updateMeta cfg nmst indv : Individual =
-        match indv.IndvType with
-        | BlueprintIndv lr -> let lr' = updateMetaParm cfg nmst lr  
-                              {indv with IndvType=BlueprintIndv lr'}
-        | _                -> indv
-
-    let clamp mn mx v = v |> max mn |> min mx
-
-    let updateMetaParm cfg nmst lr =
-        let lr' =
-            nmst.Norms.[META_INV] 
-            |> Map.tryFind PLearnRate
-            |> Option.map mass  
-            |> Option.bind (fun xs->if Array.length xs >= 2 then Some(xs) else None) //don't use distribution if only 1 point in set
-            |> Option.map (CAUtils.sampleDensity 3.0)   //sample from kernel density estimate
-            |> Option.defaultValue (CATProb.GAUSS lr.Rate 1.0 |> clamp cfg.LearnRange.Lo cfg.LearnRange.Hi)     //sample from gaussian
-        {lr with Rate=lr'}
-             
 
     let updateState ca cfg st (topP:Individual[]) =
         //new high perf indvs
@@ -80,7 +58,7 @@ module rec NormativeKS =
             |> Seq.collect (fun (i,n) -> nodeParms cfg n |> List.map (fun (p,d) -> (i,p),d))              //extract parms from cells
 
             |> Seq.append (highPerf |> Seq.choose (fun indv -> match indv.IndvType with 
-                                                               | BlueprintIndv lr -> Some((META_INV,PLearnRate),Cont (float lr.Rate)) 
+                                                               | BlueprintIndv lr -> Some((EvolveParm.META_INV,PLearnRate),Cont (float lr.Rate)) 
                                                                | _ -> None))
             |> Seq.groupBy fst                                                                            //group by innov#
             |> Seq.map (fun ((i,p),xs) -> i,p, xs |> Seq.map snd |> Seq.toList |> aggregateParms)         //aggregate group to get parm distributions
@@ -89,62 +67,6 @@ module rec NormativeKS =
             |> Seq.map (fun (i,xs) -> i, xs |> Seq.map snd |> Map.ofSeq)                                  //innov# * (parmType->distribution) map
             |> Map.ofSeq                                                                                  //map with innov# as key
         {st with Norms=norms}
-
-    let mass        = function Density fs  -> fs  | _ -> failwith "density expected"
-    let caseWheel   = function Cases whl   -> whl | _ -> failwith "cases expected"
-    let classWheel  = function Classes whl -> whl | _ -> failwith "classes expected"
-
-    let reify<'a> v = FSharpValue.MakeUnion(v,[||]) :?> 'a
-
-    ///update parameters of the given node by following the 'norms' 
-    ///of the best indviduals in the population
-    ///each node type and all of its 'named' parameters are considered here
-    let updateNode cfg n (pm:Map<ParmType,Dist>) : Node =
-        let ty =
-            match n.Type with
-            | Cell (Dense d) -> 
-                let dims = 
-                    pm 
-                    |> Map.tryFind PDims 
-                    |> Option.map mass  
-                    |> Option.bind (fun xs->if xs.Length >= 2 then Some(xs) else None) //don't use distribution if only 1 point in set
-                    |> Option.map (CAUtils.sampleDensity 3.0 >> int)   //sample from kernel density estimate
-                    |> Option.defaultValue (GraphOps.randDims cfg)     //sample from uniform, if None
-
-                let acts = 
-                    pm 
-                    |> Map.tryFind PActivation 
-                    |> Option.map caseWheel
-                    |> Option.map (spinWheel >> reify)                       //sample from dist
-                    |> Option.defaultValue (GraphOps.randActivation None)    //random, if None
-
-
-                let bias = 
-                    pm 
-                    |> Map.tryFind PBias 
-                    |> Option.map caseWheel
-                    |> Option.map (spinWheel >> reify)                      //sample from dist
-                    |> Option.defaultValue (GraphOps.randBias())            //random, if None
-
-                let d' = {d with Dims=dims; Activation=acts; Bias=bias}
-                Dense d'
-
-            | Cell (ModuleSpecies s ) -> 
-                pm 
-                |> Map.tryFind PSpecies 
-                |> Option.map classWheel
-                |> Option.map (fun w -> spinWheel w |> ModuleSpecies)                            //sample from dist
-                |> Option.defaultValue (cfg.NumSpecies |> CAUtils.randSpecies |> ModuleSpecies)  //random, if None
-
-            | Cell (Norm nt) ->
-                pm 
-                |> Map.tryFind PNorm 
-                |> Option.map caseWheel
-                |> Option.map (fun w -> spinWheel w |> reify |> Norm)                            //sample from dist
-                |> Option.defaultValue (GraphOps.randNormalization (Some nt) |> Norm)            //random, if None
-
-            | x -> failwithf "case not handled %A" x
-        {n with Type = Cell ty}
 
     ///pattern match cell type to 
     ///extract named parameters
