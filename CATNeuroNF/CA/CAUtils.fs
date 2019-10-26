@@ -219,6 +219,27 @@ module CAUtils =
             |> List.map (fun (id,_) -> id)
             |> List.toArray
 
+
+    let normalizePopFitness target (pop:Individual[]) =
+        let currentFit = pop |> Array.map (fun p -> 1.0/p.Fitness.[0] ) //convert fitness so that higher is considered better
+        let minFit = currentFit |> Array.min
+        let maxFit = currentFit |> Array.max
+        let scaler = scaler target (minFit,maxFit) 
+        currentFit |> Array.map scaler  //scale fitness to target range
+
+    
+    /// if an individual has Domain KS but has reached
+    /// max nodes then switch KS 
+    //(Domain adds new nodes which can't be done for such indviduals)
+    let adjustForMaxNodes cfg (pop:Individual[]) =
+        pop |> Array.map(fun indv -> 
+            if indv.Graph.Nodes.Count >= cfg.MaxNodes && indv.KS = Domain then  
+                //can't add any more nodes so chose another KS
+                {indv with KS = randKS (Some Domain)}
+            else
+                indv)
+    
+
     let binnedPareto bins (xs:(int*float[])[]) : int[] =
         let evaled =   xs |> Array.filter (fun (x,f) -> f.[0] < HIGH_VAL)
         if evaled |> Array.isEmpty then //its possible that nothing was evaluated yet for a module species

@@ -96,6 +96,17 @@ module CATProb =
             |> Array.sortBy snd                         //arrange ascending
         let cum = (ws.[0],ws.[1..])||>Array.scan (fun (_,acc) (k,w) -> k,acc + w)
         cum
+
+    let createWheel2 (weights:('a*float)[]) = //key * weight  key must be unique
+        let s = Array.sumBy snd weights
+        if s = 0. then failwithf "weights cannot sum to 0 %A" s
+        let ws = 
+            weights 
+            |> Array.filter (fun (_,w) -> w > 0.) 
+            |> Array.map (fun (k,w) -> k, w / s)        //total sums to 1 now
+            |> Array.sortBy snd                         //arrange ascending
+        let cum = (ws.[0],ws.[1..])||>Array.scan (fun (_,acc) (k,w) -> k,acc + w)
+        ws,cum
  
     let spinWheel wheel = 
         let r = RNG.Value.NextDouble()

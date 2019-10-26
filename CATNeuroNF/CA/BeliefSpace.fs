@@ -3,7 +3,8 @@ open Ext
 
 module rec BeliefSpace =
     //bindings to implementation
-    let distributeKnowledge     = KDStagHunt.distributeKnowledge
+    //let distributeKnowledge     = KDStagHunt.distributeKnowledge
+    let distributeKnowledge     = KDWtdMajority.distributeKnowledge
 
     let domainInfluence         = DomainKS.influence
     let situationalInfluence    = SituationalKS.influence

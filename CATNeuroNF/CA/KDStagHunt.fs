@@ -1,5 +1,6 @@
 ﻿namespace CATNeuro
 open Ext
+open CATProb
 
 ///Knowledge distribution via Stag Hunt games
 module rec KDStagHunt = 
@@ -20,12 +21,14 @@ module rec KDStagHunt =
             Situational  //toggle connection   ///  exploitative to explorative order
             Normative    //evolve parms
             Historical   //add connection
+            //Historical   //add connection
             Topgraphical //graph union
+            Domain       //add new node
             Domain       //add new node
         |]
 
     ///cache range for scaling
-    let ksRange = (0.0, defaultKSOrder.Length - 1 |> float)
+    let ksRange = (0.0, defaultKSOrder.Length |> float)
 
     ///check if competitive or cooperative phase                      
     let isCompetitiveGen st = st.ShState.GensSinceInit > st.ShState.CoopGens
@@ -69,12 +72,15 @@ module rec KDStagHunt =
                 let frnds = ca.Network pop indv.Id 
                 let all = Array.append frnds [|indv|]
                 let ranked = ca.ParetoRank (all |> Array.map fitnessById)
-                let lowR = 0.0
-                let topR = float (ranked.Length - 1)
-                let myR = ranked |> Array.findIndex(fun id->id=indv.Id) |> float
+                let myRank = ranked |> Array.findIndex(fun id->id=indv.Id) |> float
+                let pX = 1.0 / (float all.Length)
+                let myCumDnsty = myRank * pX
+                let scaledRank = scaler ksRange (0.0, 1.0) myCumDnsty |> int //best is lower as its usually loss
 
-                let scaledRank = scaler ksRange (lowR,topR) myR //best is lower as its usually loss
-                let newKS = defaultKSOrder.[int scaledRank |> min (defaultKSOrder.Length - 1)]
+                //adjust for low rank as discretization is too coarse
+                let scaledRank' = if scaledRank > 0 then scaledRank else if RNG.Value.NextDouble() < 0.5 then 0 else 1
+
+                let newKS = defaultKSOrder.[scaledRank' |> min (defaultKSOrder.Length - 1)]
                 {indv with KS=newKS} 
                )
         let st' = {st with ShState = {st.ShState with GensSinceInit=st.ShState.GensSinceInit+1}}

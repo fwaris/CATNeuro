@@ -54,6 +54,7 @@
     <Compile Include="CA\CAUtils.fs" />
     <Compile Include="CA\CAEvolve.fs" />
     <Compile Include="CA\KDStagHunt.fs" />
+    <Compile Include="CA\KDWtdMajority.fs" />
     <Compile Include="CA\KS\DomainKS.fs" />
     <Compile Include="CA\KS\NormativeKS.fs" />
     <Compile Include="CA\KS\HistoryKS.fs" />
@@ -66,6 +67,7 @@
     <None Include="Tests\CNSetEnv.fsx" />
     <None Include="Tests\GraphEvolution.fsx" />
     <None Include="Tests\TestTrim.fsx" />
+    <None Include="Tests\TestRanking.fsx" />
     <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
