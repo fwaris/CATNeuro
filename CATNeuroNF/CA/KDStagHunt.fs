@@ -21,7 +21,7 @@ module rec KDStagHunt =
             Situational  //toggle connection   ///  exploitative to explorative order
             Normative    //evolve parms
             Historical   //add connection
-            //Historical   //add connection
+            Historical   //add connection
             Topgraphical //graph union
             Domain       //add new node
             Domain       //add new node

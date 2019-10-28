@@ -5,9 +5,20 @@ open CATProb
 open Microsoft.FSharp.Reflection
 
 module rec CAEvolve =
+    let log msg = Metrics.postAll msg
+    let logMutation s = log (Metrics.ParmMutate (MUtils.popId s))
+    let logTggle s = log (Metrics.CnnTggle (MUtils.popId s))
+    let logTggleMiss s = log (Metrics.CnnTggleMiss (MUtils.popId s))
+    let logAddCnn s = log (Metrics.ConnAdd (MUtils.popId s))
+    let logAddCnnMiss s = log (Metrics.ConnAddMiss (MUtils.popId s))
+    let logAddNode s = log (Metrics.NodeAdd (MUtils.popId s))
+    let logAddNodeMiss s = log (Metrics.NodeAddMiss (MUtils.popId s))
+    let logXfer s = log (Metrics.Xfer (MUtils.popId s))
+    let logXferMiss s = log (Metrics.XferMiss (MUtils.popId s))
+
     
     module EvolveParm =
-        let META_INV = -1
+        let META_INV = -1  //innovation # used as key in look table
 
         let reify<'a> v = FSharpValue.MakeUnion(v,[||]) :?> 'a
 
@@ -36,7 +47,8 @@ module rec CAEvolve =
         ///update parameters of the given node by following the 'norms' 
         ///of the best indviduals in the population
         ///each node type and all of its 'named' parameters are considered here
-        let updateNode cfg n (pm:Map<ParmType,Dist>) : Node =
+        let updateNode cfg speciesType n (pm:Map<ParmType,Dist>) : Node =
+            logMutation speciesType
             let ty =
                 match n.Type with
                 | Cell (Dense d) -> 
@@ -84,13 +96,13 @@ module rec CAEvolve =
             {n with Type = Cell ty}
 
 
-        let infIndvParms cfg st indv =
+        let infIndvParms cfg speciesType st indv =
             let nmst = st.NmState
             let nodes' = 
                 indv.Graph.Conns
                 |> Seq.map (fun c -> c.Innovation, indv.Graph.Nodes.[c.To])
                 |> Seq.choose (fun (innovNum,n) -> nmst.Norms |> Map.tryFind innovNum |> Option.map (fun pm->innovNum,n,pm))
-                |> Seq.map (fun (i,n,pm) -> updateNode cfg n pm)
+                |> Seq.map (fun (i,n,pm) -> updateNode cfg speciesType n pm)
             let gNodes = (indv.Graph.Nodes,nodes') ||> Seq.fold (fun acc n -> acc |> Map.add n.Id n)
             let g = {indv.Graph with Nodes=gNodes}
             let indv' = updateMeta cfg nmst indv
@@ -101,43 +113,43 @@ module rec CAEvolve =
         let insertNode cfg speciesType st (indv:Individual) =
             let g = CAUtils.insertNode cfg speciesType st.DmState.NormNodeProb indv.Graph
             match GraphOps.tryValidate g with
-            | Choice1Of2 _  ->  (MUtils.popId speciesType,1) |> Metrics.NodeAdd |> Metrics.postAll
-                                {indv with Graph=g}
-            | Choice2Of2 ex -> printfn "domain invalid graph"; indv
+            | Choice1Of2 _  -> logAddNode speciesType;      {indv with Graph=g}
+            | Choice2Of2 ex -> logAddNodeMiss speciesType;  printfn "domain invalid graph"; indv
 
 
-        let toggleConnection cfg (indv:Individual) =
+        let toggleConnection cfg speciesType (indv:Individual) =
            let g' = GraphOps.toggleConnection cfg indv.Graph
            match GraphOps.tryTrimGraph g' with
-           | Choice1Of2 _ -> {indv with Graph=g'}
-           | Choice2Of2 e -> printfn "toggle connection: %s" e; 
-                             indv
+           | Choice1Of2 _ -> logAddNode speciesType;     {indv with Graph=g'}
+           | Choice2Of2 e -> logAddNodeMiss speciesType; printfn "toggle connection: %s" e; indv
 
-        let addConnection cfg (indv:Individual) =
+        let addConnection cfg speciesType (indv:Individual) =
             let g = GraphOps.addConnection cfg indv.Graph
             let g' = 
                 match GraphOps.tryTrimGraph g with
-                | Choice1Of2 _ -> g
-                | Choice2Of2 ex -> printfn "add connection: empty graph %s" ex; indv.Graph
+                | Choice1Of2 _ -> logAddCnn speciesType;      g
+                | Choice2Of2 ex -> logAddCnnMiss speciesType; printfn "add connection: empty graph %s" ex; indv.Graph
             {indv with Graph=g'}
 
-        let crossover cfg (influencer:Individual) (indv:Individual) =
+        let crossover cfg speciesType (influencer:Individual) (indv:Individual) =
             let g = GraphOps.crossover cfg influencer.Graph indv.Graph
             let g' = 
                 match GraphOps.tryTrimGraph g with
-                | Choice1Of2 _ -> g
-                | Choice2Of2 ex -> printfn "Crossover empty graph %s" ex; indv.Graph
+                | Choice1Of2 _ -> logXfer speciesType;      g
+                | Choice2Of2 ex -> logXferMiss speciesType; printfn "Crossover empty graph %s" ex; indv.Graph
             {indv with Graph=g'}
 
+
     let evolveIndv cfg (state:CAState) speciesType policy influencer indv =
+        let popId = MUtils.popId speciesType
         let m = spinWheel policy
         match m with
-        | MutateParm           -> EvolveParm.infIndvParms cfg state indv
-        | ToggleConnection     -> EvolveGraph.toggleConnection cfg indv
-        | AddConnection        -> EvolveGraph.addConnection cfg indv
+        | MutateParm           -> EvolveParm.infIndvParms cfg speciesType state indv
+        | ToggleConnection     -> EvolveGraph.toggleConnection cfg speciesType indv
+        | AddConnection        -> EvolveGraph.addConnection cfg speciesType indv
         | AddNode              -> EvolveGraph.insertNode cfg speciesType state indv
         | Crossover            -> match influencer with 
-                                  | Some inf -> EvolveGraph.crossover cfg inf indv 
+                                  | Some inf -> EvolveGraph.crossover cfg speciesType inf indv 
                                   | None -> failwithf "crossover requires influencer individual"
  
                     
