@@ -89,15 +89,19 @@ module rec CARunner =
         let bprints' = {bprints with Individuals = bprints.Individuals |> Array.map (fun indv -> {indv with Fitness =  fmap.[indv.Id]})}
         {ca with Populations=Array.append [|bprints'|] spcs'}
 
+    let knowledgeDist  = function 
+        | Stag_Hunt     -> KDStagHunt.distributeKnowledge
+        | Wtd_Majority  -> KDWtdMajority.distributeKnowledge
 
     ///step through CA for each population
     let stepPopulations  (st:Map<SpeciesType,CAState>) (ca:CA) = 
+        let kd = knowledgeDist ca.KnoweldgeDist
         let (st',pop') =
             ((st,[]),ca.Populations)
             ||> Array.fold (fun (st,acc) pop -> 
                 let popSt = st.[pop.Species]
                 let popSt',topG = acceptance ca popSt pop
-                let popSt'',pop' = influence ca popSt' topG pop
+                let popSt'',pop' = influence ca kd popSt' topG pop
                 let st' = st |> Map.add pop.Species popSt''
                 st',pop'::acc)
         (st',{ca with Populations=pop' |> List.toArray})

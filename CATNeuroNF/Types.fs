@@ -1,20 +1,26 @@
-﻿namespace rec CATNeuro
+﻿(*
+All main data types used for CATNeuro
+*)
+namespace rec CATNeuro
 
 type Node = {Id:Id; Type:NodeType}
 type Id = Id of string
 type NodeType = Cell of CellType | Output of Dense | Input of string | ModInput | ModOutput
 type Conn = {On:bool; From:Id; To:Id; Innovation:int}
-type NormalizationType = BatchNorm | LayerNorm
-type CellType = 
-    | ModuleSpecies of int 
-    | Dense of Dense
-    | Norm of NormalizationType
-    | SubGraph of Graph
 type Bias = On | Off
 type Dense = {Dims:int; Bias:Bias; Activation:Activation}
 type Activation = NONE | Elu | Relu | LeakyRelu | Sig
 type LearningParms = {Rate:float;} with static member Default = {Rate=0.01}
 type Graph = {Nodes:Map<Id,Node>; Conns:Conn list}
+
+type NormalizationType = BatchNorm | LayerNorm
+
+type CellType = 
+    | ModuleSpecies of int 
+    | Dense of Dense
+    | Norm of NormalizationType
+    | SubGraph of Graph
+
 
 type IdGen() =
     let mutable nodeId = 0
@@ -46,6 +52,8 @@ type Knowledge  = Situational | Historical | Normative | Topgraphical | Domain
 type Individual = {Fitness:float[]; Graph:Graph; Id:int; IndvType:IndvidualType; KS : Knowledge}
 type Population = {Species:SpeciesType; Individuals:Individual[]; Cfg:Cfg}
 
+type KnoweldgeDist = Stag_Hunt | Wtd_Majority
+
 type SpeciesIndv = {SpeciesId:int; IndvidualId:int}
 
 type AssemblyMeta = {Gen:int; BestFit:float option; Parms:LearningParms;}
@@ -58,11 +66,12 @@ type Network = Individual[] ->  int -> Individual[]
 
 type CA =
     {
-        Populations  : Population[]
-        Evaluator    : NetworkAssembly -> int*float[] //multi objective
-        ParetoRank   : (int*float[])[] -> int[]
-        Settings     : Settings
-        Network      : Network
+        Populations   : Population[]
+        Evaluator     : NetworkAssembly -> int*float[] //multi objective
+        ParetoRank    : (int*float[])[] -> int[]
+        Settings      : Settings
+        Network       : Network
+        KnoweldgeDist : KnoweldgeDist
     }
 
 type ConnMatch = 
@@ -72,4 +81,3 @@ type ConnMatch =
     | FrmR      of Conn
     | ExtraR    of Conn
     | ExtraL    of Conn
-

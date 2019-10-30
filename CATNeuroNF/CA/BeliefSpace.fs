@@ -3,7 +3,7 @@ open Ext
 
 module rec BeliefSpace =
     //bindings to implementation
-    let distributeKnowledge     = KDStagHunt.distributeKnowledge
+    //let distributeKnowledge     = KDStagHunt.distributeKnowledge
     //let distributeKnowledge     = KDWtdMajority.distributeKnowledge
 
     let domainInfluence         = DomainKS.influence
@@ -38,7 +38,7 @@ module rec BeliefSpace =
         |> topoAcceptance ca pop.Cfg pop.Species
 
     ///CA influence function
-    let influence ca st topP pop =
+    let influence ca distributeKnowledge st topP pop =
         let st',indvs' = distributeKnowledge ca pop.Cfg pop.Species st pop.Individuals
         let indvKs = indvs' |> Array.groupBy (fun k->k.KS)
         let speciesType = pop.Species
