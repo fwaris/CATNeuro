@@ -24,11 +24,11 @@ module rec NormativeKS =
                                          |> Array.map (fun (p,d)->  
                                             let pstr = sprintf "%A" p
                                             match d with
-                                            | Density _  -> Metrics.MDensity (i,pstr,[||])
-                                            | Cases _     -> Metrics.MCat (i,pstr,[||])
-                                            | Classes _   -> Metrics.MCat (i,pstr,[||])
+                                            | Density _  -> CnMetrics.MDensity (i,pstr,[||])
+                                            | Cases _    -> CnMetrics.MCat (i,pstr,[||])
+                                            | Classes _  -> CnMetrics.MCat (i,pstr,[||])
                                          ))
-        (MUtils.popId species,mp) |> Metrics.Norms |> Metrics.postAll
+        (MUtils.popId species,mp) |> CnMetrics.Norms |> CnMetrics.postAll
         
     let acceptance ca cfg species (st,topG) =
         let nmst = st.NmState

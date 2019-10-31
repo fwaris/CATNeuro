@@ -59,7 +59,7 @@ type CAState =
 type Mutation = MutateParm | ToggleConnection | AddConnection | AddNode | Crossover
 
 module MUtils =
-    let popId = function Blueprint -> Metrics.B | Module i -> Metrics.M i
+    let popId = function Blueprint -> CnMetrics.B | Module i -> CnMetrics.M i
 
 module CAUtils =
 

@@ -2,6 +2,7 @@
 open CATProb
 open Ext
 open BeliefSpace
+open CnMetrics
 
 type EvaluatedAssembly = {Assembly:NetworkAssembly; Fit:float[]}
 type TimeStep= {CA:CA ; Best:EvaluatedAssembly[]; Count:int; State:Map<SpeciesType,CAState>}
@@ -108,7 +109,7 @@ module rec CARunner =
 
     ///no async for easier debugging
     let debugStep (st:TimeStep) =
-        Metrics.NewGen (st.Count)|> Metrics.postAll
+        NewGen (st.Count)|> postAll
         let meta = {
                         Gen     = st.Count
                         BestFit = st.Best |> Array.tryHead |> Option.map (fun na->na.Fit.[0])
@@ -139,7 +140,7 @@ module rec CARunner =
      ///single timestep 
     let step (st:TimeStep) =
         async {
-            Metrics.NewGen (st.Count)|> Metrics.postAll
+            NewGen (st.Count)|> postAll
             let meta = {
                             Gen     = st.Count
                             BestFit = st.Best |> Array.tryHead |> Option.map (fun na->na.Fit.[0])

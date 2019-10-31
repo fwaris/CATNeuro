@@ -3,18 +3,19 @@
 open Ext
 open CATProb
 open Microsoft.FSharp.Reflection
+open CnMetrics
 
 module rec CAEvolve =
-    let log msg = Metrics.postAll msg
-    let logMutation s = log (Metrics.ParmMutate (MUtils.popId s))
-    let logTggle s = log (Metrics.CnnTggle (MUtils.popId s))
-    let logTggleMiss s = log (Metrics.CnnTggleMiss (MUtils.popId s))
-    let logAddCnn s = log (Metrics.ConnAdd (MUtils.popId s))
-    let logAddCnnMiss s = log (Metrics.ConnAddMiss (MUtils.popId s))
-    let logAddNode s = log (Metrics.NodeAdd (MUtils.popId s))
-    let logAddNodeMiss s = log (Metrics.NodeAddMiss (MUtils.popId s))
-    let logXfer s = log (Metrics.Xfer (MUtils.popId s))
-    let logXferMiss s = log (Metrics.XferMiss (MUtils.popId s))
+    let log msg = postAll msg
+    let logMutation s = log (ParmMutate (MUtils.popId s))
+    let logTggle s = log (CnnTggle (MUtils.popId s))
+    let logTggleMiss s = log (CnnTggleMiss (MUtils.popId s))
+    let logAddCnn s = log (ConnAdd (MUtils.popId s))
+    let logAddCnnMiss s = log (ConnAddMiss (MUtils.popId s))
+    let logAddNode s = log (NodeAdd (MUtils.popId s))
+    let logAddNodeMiss s = log (NodeAddMiss (MUtils.popId s))
+    let logXfer s = log (Xfer (MUtils.popId s))
+    let logXferMiss s = log (XferMiss (MUtils.popId s))
 
     
     module EvolveParm =

@@ -46,9 +46,9 @@
     <Compile Include="CATProb.fs" />
     <Compile Include="KMeans.fs" />
     <Compile Include="Extensions.fs" />
-    <Compile Include="Metrics\ObservableExt.fs" />
-    <Compile Include="Metrics\Metrics.fs" />
-    <Compile Include="Metrics\TraceCharts.fs" />
+    <Compile Include="Metrics\CnObservableExt.fs" />
+    <Compile Include="Metrics\CnMetrics.fs" />
+    <Compile Include="Metrics\CnTraceCharts.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="Graph\GraphOps.fs" />
     <Compile Include="Graph\GraphDiag.fs" />
