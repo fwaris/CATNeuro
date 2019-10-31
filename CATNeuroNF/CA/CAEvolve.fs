@@ -121,8 +121,8 @@ module rec CAEvolve =
         let toggleConnection cfg speciesType (indv:Individual) =
            let g' = GraphOps.toggleConnection cfg indv.Graph
            match GraphOps.tryTrimGraph g' with
-           | Choice1Of2 _ -> logAddNode speciesType;     {indv with Graph=g'}
-           | Choice2Of2 e -> logAddNodeMiss speciesType; printfn "toggle connection: %s" e; indv
+           | Choice1Of2 _ -> logTggle speciesType;     {indv with Graph=g'}
+           | Choice2Of2 e -> logTggleMiss speciesType; printfn "toggle connection: %s" e; indv
 
         let addConnection cfg speciesType (indv:Individual) =
             let g = GraphOps.addConnection cfg indv.Graph

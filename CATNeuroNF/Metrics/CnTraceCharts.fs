@@ -29,15 +29,9 @@ module CnTrace =
 
     let chLine title obs =
         let ch =
-            [
-              LiveChart.FastLineIncremental(obs) 
-              |> Chart.WithSeries.Marker(Size=10, Color=Color.Transparent, BorderColor=Color.DarkBlue, BorderWidth=2)
-            ]
-            |> Chart.Combine 
+            LiveChart.FastLineIncremental(obs) 
             |> Chart.WithTitle title
-            |> Chart.WithTitle(Color=System.Drawing.Color.DarkBlue)
-            |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid, LabelStyle=ls)
-            |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid)
+            |> Chart.WithTitle(Color=System.Drawing.Color.DarkBlue, FontSize=8.0)
         ch
 
 
@@ -45,12 +39,12 @@ module CnTrace =
         let chh = new ChartTypes.ChartControl(ch,Dock=DockStyle.Fill)
         chh
 
-    let container chlist =
+    let container title chlist =
         let form = new Form()
         form.Width  <- 400
         form.Height <- 600
         form.Visible <- true 
-        form.Text <- "CATNeuro Charts"
+        form.Text <- title //"CATNeuro Charts"
         let grid = new TableLayoutPanel()
         grid.AutoSize <- true
         grid.ColumnCount <- 3
@@ -79,11 +73,26 @@ module CnTrace =
         |> Observable.filter(function (Some _, Some _) -> true | _ -> false)
         |> Observable.map(fun (a,b)->a.Value, b.Value)
 
-    let openCharts() =
-        let obsNodeAdd = withObs (function NodeAdd _ -> true | _ -> false)
-        let obsNodeMiss = withObs (function NodeAddMiss _ -> true | _ -> false)
+    let openCharts title popId =
+        let obsNodeAdd = withObs (function NodeAdd p when p = popId -> true | _ -> false)
+        let obsNodeMs = withObs (function NodeAddMiss p when p = popId  -> true | _ -> false)
+        let obsCnnAdd = withObs (function ConnAdd p when p = popId -> true | _ -> false)
+        let obsCnnAddMs = withObs (function ConnAddMiss p when p = popId  -> true | _ -> false)
+        let obsXfer = withObs (function Xfer p when p = popId -> true | _ -> false)
+        let obsXferM = withObs (function XferMiss p when p = popId  -> true | _ -> false)
+        let obsCnnTggle = withObs (function CnnTggle p when p = popId -> true | _ -> false)
+        let obsCnnTggleM = withObs (function CnnTggleMiss p when p = popId  -> true | _ -> false)
+        let obsParm = withObs (function ParmMutate p when p = popId -> true | _ -> false)
+        let obsNorms = withObs (function Norms (p,_) when p = popId  -> true | _ -> false)
         [
             chLine "Node Add" obsNodeAdd
-            chLine "Node Add Miss" obsNodeMiss
+            chLine "Node Add Miss" obsNodeMs
+            chLine "Conn Add" obsCnnAdd
+            chLine "Conn Add Miss" obsCnnAddMs
+            chLine "Crossover" obsXfer
+            chLine "Crossover Miss" obsXferM
+            chLine "Conn Tggle" obsCnnTggle
+            chLine "Conn Tggle Miss" obsCnnTggleM
+            chLine "Parm Mutate" obsParm
         ]
-        |> container
+        |> container title
