@@ -3,7 +3,7 @@ open Ext
 open CATProb
 
 ///Knowledge distribution via Stag Hunt games
-module rec KDStagHunt = 
+module rec KDStagHuntStoch = 
 
     ///entry point for KD
     let distributeKnowledge ca cfg species st pop =
@@ -18,13 +18,13 @@ module rec KDStagHunt =
     ///ordering of KS from most exploitative to explorative
     let defaultKSOrder = 
         [|
-            Situational  //toggle connection   ///  exploitative to explorative order
-            Normative    //evolve parms
-            Historical   //add connection
-            Historical   //add connection
-            Topgraphical //graph union
-            Domain       //add new node
-            Domain       //add new node
+            Situational  
+            Situational   
+            Normative
+            Historical   
+            Topgraphical 
+            Domain       
+            Domain       
         |]
 
     ///cache range for scaling
@@ -78,9 +78,9 @@ module rec KDStagHunt =
                 let scaledRank = scaler ksRange (0.0, 1.0) myCumDnsty |> int //best is lower as its usually loss
 
                 //adjust for low rank as discretization is too coarse
-                let scaledRank' = if scaledRank > 0 then scaledRank else if RNG.Value.NextDouble() < 0.5 then 0 else 1
+                //let scaledRank' = if scaledRank > 0 then scaledRank else if RNG.Value.NextDouble() < 0.5 then 0 else 1
 
-                let newKS = defaultKSOrder.[scaledRank' |> min (defaultKSOrder.Length - 1)]
+                let newKS = defaultKSOrder.[scaledRank |> min (defaultKSOrder.Length - 1)]
                 {indv with KS=newKS} 
                )
         let st' = {st with ShState = {st.ShState with GensSinceInit=st.ShState.GensSinceInit+1}}

@@ -7,10 +7,10 @@ module rec TopographicKS =
     let policy =
         [|
             Crossover           , 0.5
-            AddNode             , 0.2
-            AddConnection       , 0.2
-            MutateParm          , 0.05
-            ToggleConnection    , 0.05
+            AddNode             , 0.1
+            AddConnection       , 0.1
+            MutateParm          , 0.00
+            ToggleConnection    , 0.00
         |]
         |> createWheel
 

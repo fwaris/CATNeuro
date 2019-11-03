@@ -100,7 +100,7 @@ module CAUtils =
                         GensSinceInit   = 0
                         CoopGens        = 5
                       }            
-            HsState = {Events=[]; Window=20}
+            HsState = {Events=[]; Window=50}
             DmState  = {EliteFrac=0.5; NormNodeProb=0.1}
             NmState = {
                         TopIndv = Array.empty

@@ -6,11 +6,11 @@ open CATProb
 module rec SituationalKS = 
     let policy =
         [|
-            Crossover           , 0.05
-            AddNode             , 0.05
+            Crossover           , 0.0
+            AddNode             , 0.1
             AddConnection       , 0.5
-            MutateParm          , 0.2
-            ToggleConnection    , 0.2
+            MutateParm          , 0.1
+            ToggleConnection    , 0.0
         |]
         |> createWheel
 

@@ -10,8 +10,8 @@ module rec NormativeKS =
             //Crossover           , 0.1
             //AddNode             , 0.1
             AddConnection       , 0.1
-            MutateParm          , 0.7
-            ToggleConnection    , 0.2
+            MutateParm          , 1.0
+            ToggleConnection    , 0.1
         |]
         |> createWheel
 
@@ -38,7 +38,6 @@ module rec NormativeKS =
         (st',topG)
 
     let influence ca cfg speciesType st  (topP:Individual[]) (indvs:Individual[]) = 
-        let nmst = st.NmState
         let indvs' = indvs |> Array.map (evolveIndv cfg st speciesType policy None)
         st,indvs'
 

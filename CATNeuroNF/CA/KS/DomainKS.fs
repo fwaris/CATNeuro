@@ -8,9 +8,9 @@ module rec DomainKS =
         [|
             Crossover           , 0.1
             AddNode             , 0.5
-            AddConnection       , 0.2
-            MutateParm          , 0.1
-            ToggleConnection    , 0.1
+            AddConnection       , 0.1
+            MutateParm          , 0.0
+            ToggleConnection    , 0.0
         |]
         |> createWheel
 

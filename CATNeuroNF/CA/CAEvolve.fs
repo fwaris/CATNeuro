@@ -142,7 +142,6 @@ module rec CAEvolve =
 
 
     let evolveIndv cfg (state:CAState) speciesType policy influencer indv =
-        let popId = MUtils.popId speciesType
         let m = spinWheel policy
         match m with
         | MutateParm           -> EvolveParm.infIndvParms cfg speciesType state indv

@@ -5,11 +5,11 @@ open CAEvolve
 module rec HistoryKS =
     let policy =
         [|
-            Crossover           , 0.05
-            AddNode             , 0.05
+            Crossover           , 0.0
+            AddNode             , 0.0
             AddConnection       , 0.2
             MutateParm          , 0.2
-            ToggleConnection    , 0.5
+            ToggleConnection    , 0.2
         |]
         |> createWheel
 
@@ -26,7 +26,7 @@ module rec HistoryKS =
     let updateIndv cfg speciesType st (indv:Individual) =
         let hsst = st.HsState
         let rndIndv = hsst.Events.[RNG.Value.Next(hsst.Events.Length)]
-        let selIndv = if rndIndv.Fitness.[0] > indv.Fitness.[0] then indv else {rndIndv with Id=indv.Id}
+        let selIndv = if rndIndv.Fitness.[0] > indv.Fitness.[0] then indv else {indv with Graph=rndIndv.Graph}
         let influencer = if selIndv = rndIndv then indv else rndIndv
         evolveIndv cfg st speciesType policy (Some influencer) selIndv
         
