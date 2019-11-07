@@ -20,6 +20,7 @@
 #load @"..\CA\CAEvolve.fs"
 #load @"..\CA\KDStagHunt.fs"
 #load @"..\CA\StagHuntStoch.fs"
+#load @"..\CA\KDStagHuntAdapt.fs"
 #load @"..\CA\KDWtdMajority.fs"
 #load @"..\CA\KS\DomainKS.fs"
 #load @"..\CA\KS\NormativeKS.fs"

@@ -3,7 +3,7 @@ open Ext
 open CATProb
 
 ///Knowledge distribution via Stag Hunt games
-module rec _KDStagHunt = 
+module rec KDStagHunt = 
    
     //probability of choosing KS by individual rank
     //lower rank -> more exploitative; higher rank -> more explorative
@@ -117,12 +117,14 @@ module rec _KDStagHunt =
     let fitnessById (i:Individual) = i.Id, i.Fitness
     ///distribute knowledge for cooperative phase
     let cooperativeDist ca st speciesType (pop:Individual[]) = //assume pop is sorted in order of index
+        let pct =  [0.9; 0.8; 0.7; 0.6].[st.ShState.GensSinceInit |> min 3]
+        printfn "pct %f" pct
         let pop' =
             pop
             |> Array.map (fun indv ->
                 let frnds = ca.Network pop indv.Id 
                 let all = Array.append frnds [|indv|]
-                let ranked = ca.ParetoRank (all |> Array.map fitnessById)
+                let ranked = CAUtils.scaledParetoAdapt pct (all |> Array.map fitnessById)
                 let myRank = ranked |> Array.findIndex(fun id->id=indv.Id)
 
                 let adjWheel = 

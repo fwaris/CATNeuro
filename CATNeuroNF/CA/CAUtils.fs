@@ -251,7 +251,7 @@ module CAUtils =
 
     
     let scaledPareto (xs:(int*float[])[]) : int[] =
-        let topN = float xs.Length * 0.2 |> int
+        let topN = float xs.Length * 0.6 |> int
         let xs' = xs |> Array.sortBy (fun (_,fs) -> fs.[0])
         let best = xs'.[0..topN]
         let rest = xs'.[topN+1..]
@@ -261,3 +261,13 @@ module CAUtils =
         let rslt = Array.append (best |> Array.map fst) (sorted  |> Array.map fst)
         rslt
 
+    let scaledParetoAdapt topPct (xs:(int*float[])[]) : int[] =
+        let topN = float xs.Length * 0.6 |> int
+        let xs' = xs |> Array.sortBy (fun (_,fs) -> fs.[0])
+        let best = xs'.[0..topN]
+        let rest = xs'.[topN+1..]
+
+        let scaledRest = rest |> Array.map (fun (i,fs)->i,(0.5*log(fs.[0])) + log(fs.[1]))
+        let sorted = scaledRest |> Array.sortBy (fun (i,sf) -> sf)
+        let rslt = Array.append (best |> Array.map fst) (sorted  |> Array.map fst)
+        rslt
