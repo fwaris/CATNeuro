@@ -61,12 +61,12 @@ showGraph "sample 1 trim" gt
 let dmpC g = g.Conns |> List.iter (printConn >> printfn "%s" )
 
 let testToggle() =
-    let gt1 = toggleConnection cfg g
+    let gt1 = toggleConnection cfg g |> Option.get
     gt1 = gt1 
     showGraph "before toggle connection" g
     showGraph "after toggle connection"  gt1
 
-    let gt2 = toggleConnection cfg gt1
+    let gt2 = toggleConnection cfg gt1 |> Option.get
 
     gt2 = gt1
     gt2 = g
@@ -79,9 +79,9 @@ let testToggle() =
     dmpC gt2
 
 let testAddConn() =
-    let g1 = addConnection cfg g
-    let g2 = addConnection cfg g1
-    let g3 = addConnection cfg g2
+    let g1 = addConnection cfg g    |> Option.get
+    let g2 = addConnection cfg g1   |> Option.get
+    let g3 = addConnection cfg g2   |> Option.get
     showGraph "before add connection" g
     showGraph "after add connection" g1
     showGraph "g" g
@@ -93,26 +93,26 @@ let testAddConn() =
     diffConn g1 g
 
 let testAddNode() =
-    let g1 = addNode cfg g
-    let g2 = addNode cfg g1
+    let g1 = addNode cfg g    |> Option.get
+    let g2 = addNode cfg g1   |> Option.get
     showGraph "before add node" g
     showGraph "after add node" g1
     showGraph "g2" g2
-    let gn = (g,[1 .. 10]) ||> List.fold (fun x i -> printfn "i=%d" i; addNode cfg x)
+    let gn = (g,[1 .. 10]) ||> List.fold (fun x i -> printfn "i=%d" i; addNode cfg x |> Option.get)
     showGraph "gn" gn
 
 let testCrossover1() =
-    let g1 = addNode cfg g
-    let g2 = addNode cfg g
+    let g1 = addNode cfg g |> Option.get
+    let g2 = addNode cfg g |> Option.get
     let g3 = crossover cfg g1 g2
     showGraph "g1" g1
     showGraph "g2" g2
     showGraph "crossover" g3
 
 let testCrossover() = 
-    let g1 = addNode cfg g
-    let g2 = addNode cfg g1
-    let g3 = crossover cfg g1 g2 |> addConnection cfg
+    let g1 = addNode cfg g  |> Option.get
+    let g2 = addNode cfg g1 |> Option.get
+    let g3 = crossover cfg g1 g2 |> addConnection cfg |> Option.get
     showGraph "g" g
     showGraph "g1" g1
     showGraph "g2" g2

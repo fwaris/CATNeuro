@@ -10,7 +10,7 @@ module CnMetrics =
 
     type Parm =
         | MDensity of int * string * float[]
-        | MCat of int * string * (string*float[])[]
+        | MCat of int * string * (string*float)[]
 
     type PopId = B | M of int
 

@@ -6,7 +6,6 @@ module CnTrace =
     open System.Drawing
     open System
     open CnMetrics
-   
 
     let chGrid = ChartTypes.Grid(Enabled=false,Interval=0.1)
     let ls = ChartTypes.LabelStyle(TruncatedLabels=true, Interval=0.2, Format="{0:F1}")
@@ -83,7 +82,6 @@ module CnTrace =
         let obsCnnTggle = withObs (function CnnTggle p when p = popId -> true | _ -> false)
         let obsCnnTggleM = withObs (function CnnTggleMiss p when p = popId  -> true | _ -> false)
         let obsParm = withObs (function ParmMutate p when p = popId -> true | _ -> false)
-        let obsNorms = withObs (function Norms (p,_) when p = popId  -> true | _ -> false)
         [
             chLine "Node Add" obsNodeAdd
             chLine "Node Add Miss" obsNodeMs
@@ -96,3 +94,118 @@ module CnTrace =
             chLine "Parm Mutate" obsParm
         ]
         |> container title
+
+    open MathNet.Numerics.Statistics
+
+    let dns bndwth xs data =
+        let ds = xs |> Array.map (fun x -> KernelDensity.EstimateGaussian(x,bndwth,data))
+        ds
+
+    let estimateB data =
+        let h = CATProb.stddev data * ((4./3./float data.Length) ** (1./5.))     //silverman's rule of thumb for bandwidth
+        let mn = data |> Array.min
+        let mx = data |> Array.max
+        h,[| mn .. 0.1 .. mx |]
+
+    let collectParms (obs:IObservable<Parm[]>) =
+        let mutable d1 = Map.empty
+        let mutable d2 = Map.empty
+        { new IObservable<Map<_,_> * Map<_,_>> with
+            member x.Subscribe(observer) = //TODO: need to dispose both 
+                obs.Subscribe(fun parms -> 
+
+                    try 
+                        d1 <- (d1,parms) ||> Array.fold (fun acc p -> 
+                            match p with 
+                            | MDensity (i,s,fs) -> let b,xs = estimateB fs
+                                                   let b = max 1.0 b
+                                                   let ds = dns b xs fs
+                                                   acc  |> Map.add (i,s) (xs,ds) 
+                            | _                 -> acc
+                            )
+                        d2 <- (d2,parms) ||> Array.fold (fun acc p -> 
+                            match p with 
+                            | MCat (i,s,fs) -> acc  |> Map.add (i,s) fs
+                            | _             -> acc
+                            )
+                    with ex ->
+                        printfn "%A" ex.Message
+
+                    observer.OnNext (d1,d2)
+                    
+                    )
+        }
+
+    let createNormsForm title  =
+        let form = new Form()
+        form.Width  <- 600
+        form.Height <- 300
+        form.Visible <- true 
+        form.Text <- title //"CATNeuro Charts"
+        let grid = new TableLayoutPanel()
+        grid.AutoSize <- true
+        grid.AutoScroll <- true
+        grid.ColumnCount <- 3
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.f)) |> ignore
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.f)) |> ignore
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.f)) |> ignore
+        //grid.RowCount <- 2
+        //grid.RowStyles.Add(new RowStyle(SizeType.Percent,50.f)) |> ignore
+        //grid.RowStyles.Add(new RowStyle(SizeType.Percent,50.f)) |> ignore
+        grid.GrowStyle <-  TableLayoutPanelGrowStyle.AddRows
+        grid.Dock <- DockStyle.Fill
+        form.Controls.Add(grid)
+        form.Show()
+        grid,form
+
+    let openNormsChart uiCtx title popId =
+
+        let obsNorms = 
+            obsAll
+            |> Observable.choose (function Norms (p,ns) when p = popId -> Some(ns) | _ -> None)
+            |> collectParms
+
+
+        let grid,form = createNormsForm title
+
+        let disp =
+            obsNorms 
+            |> Observable.subscribe(fun (dnstyMap,catMap) ->
+                let i = 1
+                async {
+                    do! Async.SwitchToContext uiCtx
+                    form.SuspendLayout()
+                    grid.Visible <- false
+                    grid.Controls.Clear()
+                    try 
+                    
+                        dnstyMap |> Map.iter (fun ((i,p) as k) fs ->
+
+                            let newCh() =
+                                Chart.Area( fs ||> Array.zip) 
+                                |> Chart.WithTitle (sprintf "%d %s" i p)
+                                |> containerize
+                            let ch = newCh()
+                            grid.Controls.Add(ch)
+
+                        )
+
+                        catMap |> Map.iter (fun ((i,p) as k) fs ->
+
+                            let newCh() =
+                                Chart.Bar fs
+                                |> Chart.WithTitle (sprintf "%d %s" i p)
+                                |> containerize                        
+                            let ch = newCh()
+                            grid.Controls.Add(ch)
+
+                        )
+                    with ex -> printfn "chart %A" ex.Message
+                    grid.Visible <- true
+                    form.ResumeLayout()
+                }
+                |> Async.RunSynchronously
+            )
+        
+        disp
+        

@@ -88,23 +88,45 @@ module CATProb =
  
     let createWheelW (weights:('a*float)[]) = //key * weight  key must be unique
         let s = Array.sumBy snd weights
-        if s = 0. then failwithf "weights cannot sum to 0 %A" s
+        let weights = if s = 0. then weights |> Array.map(fun (a,_)->a,1.0) else weights
 
-        //normalize weights so they sum to one
+        //normalize weights
         let nrmlzdWts = 
             weights 
-            |> Array.filter (fun (_,w) -> w > 0.) 
+            |> Array.filter (fun (_,w) -> w > 0. && (Double.IsNaN w || Double.IsInfinity w) |> not) 
             |> Array.map (fun (k,w) -> k, w / s)        //total sums to 1 now
             |> Array.sortBy snd                         //arrange ascending
 
+        //construct cumulative distribution for sampling
         let cdf = 
-            (nrmlzdWts.[0],nrmlzdWts.[1..])
-            ||>Array.scan (fun (_,acc) (k,w) -> k,acc + w)
-
+            if weights.Length <= 1 then
+                nrmlzdWts
+            else
+                (nrmlzdWts.[0],nrmlzdWts.[1..])||>Array.scan (fun (_,acc) (k,w) -> k,acc + w)
         nrmlzdWts,cdf
 
     let createWheel (weights:('a*float)[]) = createWheelW weights |> snd    //version that only returns cdf
 
+    let sqrtPi = sqrt Math.PI
+
+    let sqr x = x * x
+
+    let stddev fs = 
+      let m = fs |> Array.average
+      let sse = fs |> Array.map(fun f -> f - m |> sqr) |> Array.sum
+      let variance = sse/(float fs.Length)
+      sqrt variance
+
+    ///normal pdf
+    let density mean stddev x =
+        let d = (x - mean) / stddev
+        exp (-0.5 * d * d)  / sqrtPi * stddev
+
+    ///density at x using Gaussian kernel
+    let kernelDensity bandwidth samples x =
+        let agg = Array.zeroCreate (Array.length samples)
+        samples |> Array.Parallel.iteri(fun i s -> agg.[i] <- density 0.0 1.0 ((x - s) / bandwidth))
+        (Array.average agg) / bandwidth
  
     let spinWheel wheel = 
         let r = RNG.Value.NextDouble()

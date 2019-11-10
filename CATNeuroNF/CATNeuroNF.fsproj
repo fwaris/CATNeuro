@@ -83,6 +83,12 @@
     <Reference Include="FsPickler">
       <HintPath>..\packages\FsPickler.5.2.2\lib\net45\FsPickler.dll</HintPath>
     </Reference>
+    <Reference Include="MathNet.Numerics">
+      <HintPath>..\packages\MathNet.Numerics.4.9.0\lib\net461\MathNet.Numerics.dll</HintPath>
+    </Reference>
+    <Reference Include="MathNet.Numerics.FSharp">
+      <HintPath>..\packages\MathNet.Numerics.FSharp.4.9.0\lib\net45\MathNet.Numerics.FSharp.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Msagl">
       <HintPath>..\packages\Microsoft.Msagl.1.1.3\lib\net40\Microsoft.Msagl.dll</HintPath>
     </Reference>

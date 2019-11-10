@@ -29,6 +29,8 @@ module rec BeliefSpace =
 
         let topG = pareto |> Array.take ((float pareto.Length) * ca.Settings.TakeFraction |> int)        
 
+
+
         //thread state & top indvs through acceptance
         (st,topG)
         |> situationalIAcceptance ca pop.Cfg pop.Species

@@ -235,26 +235,25 @@ module rec GraphOps =
         |> Option.map(fun oldConn ->
             let newConn = {oldConn with On=not oldConn.On}
             {g with Conns = g.Conns |> updateConns oldConn [newConn]})
-        |> Option.defaultWith(fun ()->printfn "unable to find a connection to toggle"; g)
 
     ///add a random connection
     let addConnection cfg (g:Graph) =
-       match randUnconn g with 
-       | Some (f,t) -> 
+        randUnconn g 
+        |> Option.map (fun (f,t) -> 
             if isInput g.Nodes.[t] then failwithf "target node is input"
             {g with Conns = {On=true; Innovation=cfg.IdGen.conn(); From=f; To=t}::g.Conns}
-       | None       -> g
+        )
 
     let insertNode cfg (g:Graph) conn (newNode:Node) =
         if g.Nodes.Count >= cfg.MaxNodes then
             printfn "max nodes reached"
-            g
+            None
         else
             let forwardConn = {On=true; Innovation=cfg.IdGen.conn(); From=newNode.Id; To=conn.To}
             let backConn = {conn with To=newNode.Id; Innovation=cfg.IdGen.conn()}
             let disConn = {conn with On=false}
             let conns = g.Conns |> updateConns conn [backConn;forwardConn;disConn] 
-            {g with Nodes=g.Nodes |> Map.add newNode.Id newNode; Conns=conns}
+            Some {g with Nodes=g.Nodes |> Map.add newNode.Id newNode; Conns=conns}
 
 
     /// modify some parameter of node to be like that of the template node

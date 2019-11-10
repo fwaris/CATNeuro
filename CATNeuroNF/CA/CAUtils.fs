@@ -56,7 +56,6 @@ type CAState =
         SiState : SiState
     }
 
-type Mutation = MutateParm | ToggleConnection | AddConnection | AddNode | Crossover
 
 module MUtils =
     let popId = function Blueprint -> CnMetrics.B | Module i -> CnMetrics.M i
@@ -163,12 +162,21 @@ module CAUtils =
         let availMtns = 4.0
         let ths = [| for i in 1.0 .. availMtns - 1.0 -> i*(1.0/availMtns) |]
         let g = indv.Graph
-        let g' =
-            if spin < ths.[0]   then GraphOps.randMutateParm cfg g
-            elif spin < ths.[1] then GraphOps.toggleConnection  cfg g
-            elif spin < ths.[2] then GraphOps.addConnection cfg g
-            else                     insertNode cfg speciesType st g
-        {indv with Graph=g'}
+        if spin < ths.[0]   then 
+            {indv with Graph = GraphOps.randMutateParm cfg g}
+        elif spin < ths.[1] then 
+            GraphOps.toggleConnection  cfg g 
+            |> Option.map (fun g -> {indv with Graph=g}) 
+            |> Option.defaultValue indv
+        elif spin < ths.[2] then 
+            GraphOps.addConnection cfg g
+            |> Option.map (fun g -> {indv with Graph=g}) 
+            |> Option.defaultValue indv
+        else  
+            insertNode cfg speciesType st g  
+            |> Option.map (fun g -> {indv with Graph=g}) 
+            |> Option.defaultValue indv
+       
 
 
     let hexagonNetworkViz (pop:Individual[]) id =

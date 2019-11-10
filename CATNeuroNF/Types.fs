@@ -49,7 +49,19 @@ type Cfg =
                                 MaxNodes=10;}
 
 type Knowledge  = Situational | Historical | Normative | Topgraphical | Domain 
-type Individual = {Fitness:float[]; Graph:Graph; Id:int; IndvType:IndvidualType; KS : Knowledge}
+
+type Mutation = MutateParm | ToggleConnection | AddConnection | AddNode | Crossover
+
+type Individual = 
+    {  
+        Id           : int
+        Fitness      : float[]
+        Graph        : Graph
+        IndvType     : IndvidualType
+        KS           : Knowledge 
+        Restrictions : Set<Mutation>
+    }
+
 type Population = {Species:SpeciesType; Individuals:Individual[]; Cfg:Cfg}
 
 type KnoweldgeDist = Stag_Hunt | Wtd_Majority

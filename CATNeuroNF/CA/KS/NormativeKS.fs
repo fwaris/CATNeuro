@@ -7,11 +7,11 @@ open CAEvolve
 module rec NormativeKS =     
     let policy =
         [|
-            //Crossover           , 0.1
-            //AddNode             , 0.1
-            AddConnection       , 0.1
-            MutateParm          , 1.0
-            ToggleConnection    , 0.1
+            //Crossover         , 0.1
+            //AddNode           , 0.1
+            AddConnection       , 0.0
+            MutateParm          , 1.0     //normative does mutation only
+            ToggleConnection    , 0.0
         |]
         |> createWheel
 
@@ -24,9 +24,9 @@ module rec NormativeKS =
                                          |> Array.map (fun (p,d)->  
                                             let pstr = sprintf "%A" p
                                             match d with
-                                            | Density _  -> CnMetrics.MDensity (i,pstr,[||])
-                                            | Cases _    -> CnMetrics.MCat (i,pstr,[||])
-                                            | Classes _  -> CnMetrics.MCat (i,pstr,[||])
+                                            | Density ds  -> CnMetrics.MDensity (i,pstr,ds)
+                                            | Cases cs    -> CnMetrics.MCat (i,pstr,cs |> Array.map(fun (u,i)->u.Name,i))
+                                            | Classes is  -> CnMetrics.MCat (i,pstr,is|>Array.map(fun (c,i)->string c,i))
                                          ))
         (MUtils.popId species,mp) |> CnMetrics.Norms |> CnMetrics.postAll
         
@@ -65,7 +65,7 @@ module rec NormativeKS =
             |> Seq.groupBy fst                                                                            //re-group by innov# 
             |> Seq.map (fun (i,xs) -> i, xs |> Seq.map snd |> Map.ofSeq)                                  //innov# * (parmType->distribution) map
             |> Map.ofSeq                                                                                  //map with innov# as key
-        {st with Norms=norms}
+        {st with  Norms=norms; TopIndv=highPerf}
 
     ///pattern match cell type to 
     ///extract named parameters

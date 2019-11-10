@@ -112,25 +112,48 @@ module rec CAEvolve =
     module EvolveGraph = 
 
         let insertNode cfg speciesType st (indv:Individual) =
-            let g = CAUtils.insertNode cfg speciesType st.DmState.NormNodeProb indv.Graph
-            match GraphOps.tryValidate g with
-            | Choice1Of2 _  -> logAddNode speciesType;      {indv with Graph=g}
-            | Choice2Of2 ex -> logAddNodeMiss speciesType;  printfn "domain invalid graph"; indv
+            CAUtils.insertNode cfg speciesType st.DmState.NormNodeProb indv.Graph
+            |> Option.map (fun g -> 
+                match GraphOps.tryValidate g with
+                | Choice1Of2 _  -> logAddNode speciesType
+                                   {indv with Graph=g}
+                | Choice2Of2 ex -> logAddNodeMiss speciesType
+                                   printfn "insertNode: %s" ex
+                                   indv)
+            |> Option.defaultWith (fun () ->
+                logAddNodeMiss speciesType
+                {indv with Restrictions=indv.Restrictions.Add AddNode})
 
 
         let toggleConnection cfg speciesType (indv:Individual) =
-           let g' = GraphOps.toggleConnection cfg indv.Graph
-           match GraphOps.tryTrimGraph g' with
-           | Choice1Of2 _ -> logTggle speciesType;     {indv with Graph=g'}
-           | Choice2Of2 e -> logTggleMiss speciesType; printfn "toggle connection: %s" e; indv
+            GraphOps.toggleConnection cfg indv.Graph
+            |> Option.map (fun g ->
+                match GraphOps.tryTrimGraph g with
+                | Choice1Of2 _ -> logTggle speciesType
+                                  {indv with Graph=g}
+                | Choice2Of2 e -> logTggleMiss speciesType
+                                  printfn "toggle connection: %s" e
+                                  indv)
+            |> Option.defaultWith (fun () ->
+                logTggleMiss speciesType
+                indv)
 
         let addConnection cfg speciesType (indv:Individual) =
-            let g = GraphOps.addConnection cfg indv.Graph
-            let g' = 
+            GraphOps.addConnection cfg indv.Graph
+            |> Option.map(fun g -> 
                 match GraphOps.tryTrimGraph g with
-                | Choice1Of2 _ -> logAddCnn speciesType;      g
-                | Choice2Of2 ex -> logAddCnnMiss speciesType; printfn "add connection: empty graph %s" ex; indv.Graph
-            {indv with Graph=g'}
+                | Choice1Of2 _ -> logAddCnn speciesType
+                                  {indv with Graph=g}
+                | Choice2Of2 e -> logAddCnnMiss speciesType
+                                  printfn "add connection: empty graph %s" e
+                                  indv)
+            |> Option.defaultWith (fun () ->
+                logAddCnnMiss speciesType 
+                if indv.Restrictions.Contains AddNode then
+                    {indv with Restrictions = indv.Restrictions.Add AddConnection}  // if cannot add node, then new connections are restricted also
+                else
+                    indv)
+               
 
         let crossover cfg speciesType (influencer:Individual) (indv:Individual) =
             let g = GraphOps.crossover cfg influencer.Graph indv.Graph
@@ -142,14 +165,18 @@ module rec CAEvolve =
 
 
     let evolveIndv cfg (state:CAState) speciesType policy influencer indv =
-        let m = spinWheel policy
-        match m with
-        | MutateParm           -> EvolveParm.infIndvParms cfg speciesType state indv
-        | ToggleConnection     -> EvolveGraph.toggleConnection cfg speciesType indv
-        | AddConnection        -> EvolveGraph.addConnection cfg speciesType indv
-        | AddNode              -> EvolveGraph.insertNode cfg speciesType state indv
-        | Crossover            -> match influencer with 
-                                  | Some inf -> EvolveGraph.crossover cfg speciesType inf indv 
-                                  | None -> failwithf "crossover requires influencer individual"
+        let policy' = policy |> Array.filter (fun (m,w) -> indv.Restrictions.Contains m |> not) |> createWheel
+        if Array.isEmpty policy' then 
+            EvolveParm.infIndvParms cfg speciesType state indv
+        else
+            let m = spinWheel policy'
+            match m with
+            | MutateParm           -> EvolveParm.infIndvParms cfg speciesType state indv
+            | ToggleConnection     -> EvolveGraph.toggleConnection cfg speciesType indv
+            | AddConnection        -> EvolveGraph.addConnection cfg speciesType indv
+            | AddNode              -> EvolveGraph.insertNode cfg speciesType state indv
+            | Crossover            -> match influencer with 
+                                      | Some inf -> EvolveGraph.crossover cfg speciesType inf indv 
+                                      | None -> failwithf "crossover requires influencer individual"
  
                     
