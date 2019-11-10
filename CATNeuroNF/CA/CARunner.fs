@@ -47,7 +47,7 @@ module rec CARunner =
         let assembly' = GraphOps.trimGraph assembly
         let replaceMents = selIndvs|>Map.map(fun sid ind->{SpeciesId=sid; IndvidualId=ind.Id}) |> Map.toSeq |> Seq.map snd |> Seq.toArray
         let model = assembly'
-        let meta = {meta with Parms=parms}
+        let meta:AssemblyMeta = {meta with Parms=parms}
         {BlueprintId = blueprint.Id; Model=model; Meta=meta; ModuleReplacements=replaceMents }
 
     let separatePop pops = 

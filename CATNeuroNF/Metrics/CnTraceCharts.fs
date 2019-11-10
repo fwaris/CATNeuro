@@ -117,16 +117,16 @@ module CnTrace =
                     try 
                         d1 <- (d1,parms) ||> Array.fold (fun acc p -> 
                             match p with 
-                            | MDensity (i,s,fs) -> let b,xs = estimateB fs
+                            | MDensity densty   -> let b,xs = estimateB densty.Density
                                                    let b = max 1.0 b
-                                                   let ds = dns b xs fs
-                                                   acc  |> Map.add (i,s) (xs,ds) 
+                                                   let ds = dns b xs densty.Density
+                                                   acc  |> Map.add (densty.Innov,densty.Parm) {|S=densty.Density.Length; Xs=xs; Ys=ds |}
                             | _                 -> acc
                             )
                         d2 <- (d2,parms) ||> Array.fold (fun acc p -> 
                             match p with 
-                            | MCat (i,s,fs) -> acc  |> Map.add (i,s) fs
-                            | _             -> acc
+                            | MCat cat -> acc  |> Map.add (cat.Innov,cat.Parm) {|S=cat.Samples; Ctgs=cat.Categories|}
+                            | _        -> acc
                             )
                     with ex ->
                         printfn "%A" ex.Message
@@ -179,22 +179,22 @@ module CnTrace =
                     grid.Controls.Clear()
                     try 
                     
-                        dnstyMap |> Map.iter (fun ((i,p) as k) fs ->
+                        dnstyMap |> Map.iter (fun ((i,p) as k) ds ->
 
                             let newCh() =
-                                Chart.Area( fs ||> Array.zip) 
-                                |> Chart.WithTitle (sprintf "%d %s" i p)
+                                Chart.Area( (ds.Xs,ds.Ys) ||> Array.zip) 
+                                |> Chart.WithTitle (sprintf "%d %s [%d]" i p ds.S, FontSize=9.0)
                                 |> containerize
                             let ch = newCh()
                             grid.Controls.Add(ch)
 
                         )
 
-                        catMap |> Map.iter (fun ((i,p) as k) fs ->
+                        catMap |> Map.iter (fun ((i,p) as k) cat ->
 
                             let newCh() =
-                                Chart.Bar fs
-                                |> Chart.WithTitle (sprintf "%d %s" i p)
+                                Chart.Bar cat.Ctgs
+                                |> Chart.WithTitle (sprintf "%d %s[%d]" i p cat.S, FontSize=9.0)
                                 |> containerize                        
                             let ch = newCh()
                             grid.Controls.Add(ch)

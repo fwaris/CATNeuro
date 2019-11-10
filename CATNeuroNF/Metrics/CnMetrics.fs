@@ -9,8 +9,8 @@ module CnMetrics =
     //defined here to log or gather metrics
 
     type Parm =
-        | MDensity of int * string * float[]
-        | MCat of int * string * (string*float)[]
+        | MDensity of {|Innov:int; Parm:string; Density:float[] |}
+        | MCat of     {|Innov:int; Parm:string; Categories:(string*float)[]; Samples:int |}
 
     type PopId = B | M of int
 

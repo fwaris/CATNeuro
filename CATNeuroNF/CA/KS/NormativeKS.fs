@@ -24,9 +24,15 @@ module rec NormativeKS =
                                          |> Array.map (fun (p,d)->  
                                             let pstr = sprintf "%A" p
                                             match d with
-                                            | Density ds  -> CnMetrics.MDensity (i,pstr,ds)
-                                            | Cases cs    -> CnMetrics.MCat (i,pstr,cs |> Array.map(fun (u,i)->u.Name,i))
-                                            | Classes is  -> CnMetrics.MCat (i,pstr,is|>Array.map(fun (c,i)->string c,i))
+                                            | Density ds  -> CnMetrics.MDensity {|Innov=i; Parm=pstr; Density=ds |}
+
+                                            | Cases cs    -> CnMetrics.MCat {| Innov=i; Parm=pstr; 
+                                                                               Categories = cs.CWheel |> Array.map(fun (u,i)->u.Name,i)  |> Array.sortBy fst
+                                                                               Samples=cs.Samples |}
+
+                                            | Classes is  -> CnMetrics.MCat {| Innov=i; Parm=pstr; 
+                                                                               Categories = is.IWheel |> Array.map (fun (n,i)-> string n,i) |> Array.sortBy fst
+                                                                               Samples=is.Samples |}
                                          ))
         (MUtils.popId species,mp) |> CnMetrics.Norms |> CnMetrics.postAll
         
@@ -97,14 +103,19 @@ module rec NormativeKS =
         |> List.head
 
 
+    let MISSING_CASE_WT = 0.1 //weight mulitplier for missing cases
+
     ///keep non-zero prob for all available options
-    let completeCases (xs:(UnionCaseInfo*float) list)= 
-        let uc,_ = xs.[0]
-        let usc = xs |> List.map fst |> List.map(fun u->u.Name) |> set
+    let completeCases (weights:(UnionCaseInfo*float) list)= 
+        let uc,_ = weights.[0]
+        let usc = weights |> List.map fst |> List.map(fun u->u.Name) |> set
         let allucs = FSharp.Reflection.FSharpType.GetUnionCases(uc.DeclaringType)
         let missingUcs = allucs |> Array.filter (fun x->usc.Contains x.Name |> not) |> Array.toList
-        let mws = missingUcs |> List.map (fun x -> x, 0.01)
-        List.append xs mws
+        let avgWeight = (weights |> List.averageBy snd)
+        let adjW = avgWeight * (float weights.Length / float allucs.Length)
+        let missW = adjW * MISSING_CASE_WT
+        let mws = missingUcs |> List.map (fun x -> x, missW)
+        List.append weights mws
 
     ///keep non-zero prob for all available options
     let completeClasses ci = 
@@ -112,8 +123,14 @@ module rec NormativeKS =
         let weights = ci.Refs |> List.countBy yourself |> List.map (fun (x,c)->x,float c)
         let refCls = ci.Refs |> set
         let missingCs = allClasses |> List.filter (fun c -> refCls.Contains c |> not)
-        let msw = missingCs |> List.map (fun x -> x, 0.01)
+        let avgWeight = (weights |> List.averageBy snd)
+        let adjW = avgWeight * (float weights.Length / float allClasses.Length)
+        let missW = adjW * MISSING_CASE_WT
+        let msw = missingCs |> List.map (fun x -> x, missW)
         List.append weights msw 
+
+    let caseWheel samples w  = {Samples=samples; CWheel=w}
+    let intWheel samples  w  = {Samples=samples; IWheel=w}
 
     ///aggregate list of parameter values. 
     ///each element of the list is expected to be of the same type
@@ -128,6 +145,7 @@ module rec NormativeKS =
                             |> completeCases
                             |> List.toArray
                             |> createWheel          //create prob. 'wheel' for cases
+                            |> caseWheel xs.Length
                             |> Cases |> Some
         | Cont _::_     ->  xs 
                             |> conts 
@@ -138,6 +156,7 @@ module rec NormativeKS =
                             |> completeClasses
                             |> List.toArray
                             |> createWheel          //create prob. 'wheel' for classes 
+                            |> intWheel xs.Length
                             |> Classes |> Some
                 
 

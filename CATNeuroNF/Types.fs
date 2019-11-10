@@ -42,11 +42,11 @@ type Cfg =
         LearnRange  : Range
         IdGen       : IdGen
     }
-    static member Default =  {  NumSpecies=2; 
-                                IdGen=IdGen()
-                                DenseRange={Lo=5.; Hi=20.}
-                                LearnRange={Lo=0.001; Hi=0.1}
-                                MaxNodes=10;}
+    static member Default() = {  NumSpecies=2; 
+                                 IdGen=IdGen()
+                                 DenseRange={Lo=5.; Hi=20.}
+                                 LearnRange={Lo=0.001; Hi=0.1}
+                                 MaxNodes=10;}
 
 type Knowledge  = Situational | Historical | Normative | Topgraphical | Domain 
 

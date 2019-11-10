@@ -17,8 +17,8 @@ type HsState = {Events:Individual list; Window:int}
 type DmState = {EliteFrac:float; NormNodeProb:float}
 type SiState = {Exemplars:Individual[]; SpinWheel:(Graph*float)[]}
 
-type CaseWheel = (UnionCaseInfo*float)[]
-type IntWheel = (int*float)[]
+type CaseWheel = {Samples:int; CWheel:(UnionCaseInfo*float)[]}
+type IntWheel = {Samples:int; IWheel:(int*float)[]}
 type ParmType = PDims | PActivation | PBias | PSpecies | PNorm | PLearnRate
 type ClassInfo = {TotalClasses:int; Refs:int list}
 type DistVal = Case of UnionCaseInfo | Cont of float | Class of ClassInfo
@@ -88,7 +88,7 @@ module CAUtils =
     let sampleDensity bandwidth (mass:float[]) =  
         let n = mass.[RNG.Value.Next(mass.Length)]
         let k = GAUSS 0.0 bandwidth
-        n + k |> max 2.
+        n + k
         
 
     let initState (pop:Population) =

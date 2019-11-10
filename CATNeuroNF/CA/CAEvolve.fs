@@ -36,13 +36,16 @@ module rec CAEvolve =
         let clamp mn mx v = v |> max mn |> min mx
 
         let updateMetaParm cfg nmst lr =
+            let clampR = clamp cfg.LearnRange.Lo cfg.LearnRange.Hi
+            let bw = (cfg.LearnRange.Hi - cfg.LearnRange.Lo) / 10.0
             let lr' =
                 nmst.Norms.[META_INV] 
                 |> Map.tryFind PLearnRate
                 |> Option.map mass  
                 |> Option.bind (fun xs->if Array.length xs >= 2 then Some(xs) else None) //don't use distribution if only 1 point in set
-                |> Option.map (CAUtils.sampleDensity 3.0)   //sample from kernel density estimate
-                |> Option.defaultValue (CATProb.GAUSS lr.Rate 1.0 |> clamp cfg.LearnRange.Lo cfg.LearnRange.Hi)     //sample from gaussian
+                |> Option.map (CAUtils.sampleDensity bw >> clampR)   //sample from kernel density estimate
+                |> Option.defaultValue (CATProb.GAUSS lr.Rate 1.0 |> clampR)     //sample from gaussian
+            printfn "learning rate %f" lr'
             {lr with Rate=lr'}
 
         ///update parameters of the given node by following the 'norms' 
@@ -53,28 +56,32 @@ module rec CAEvolve =
             let ty =
                 match n.Type with
                 | Cell (Dense d) -> 
+                    let bw = (cfg.DenseRange.Hi - cfg.DenseRange.Lo) / 10.0
+                    let clampR = clamp cfg.DenseRange.Lo cfg.DenseRange.Hi
                     let dims = 
                         pm 
                         |> Map.tryFind PDims 
                         |> Option.map mass  
                         |> Option.bind (fun xs->if xs.Length >= 2 then Some(xs) else None) //don't use distribution if only 1 point in set
-                        |> Option.map (CAUtils.sampleDensity 3.0 >> int)   //sample from kernel density estimate
-                        |> Option.defaultValue (GraphOps.randDims cfg)     //sample from uniform, if None
+                        |> Option.map (CAUtils.sampleDensity bw >> clampR >> int)          //sample from kernel density estimate
+                        |> Option.defaultValue (GraphOps.randDims cfg)                     //sample from uniform, if None
 
                     let acts = 
                         pm 
                         |> Map.tryFind PActivation 
                         |> Option.map caseWheel
-                        |> Option.map (spinWheel >> reify)                       //sample from dist
-                        |> Option.defaultValue (GraphOps.randActivation None)    //random, if None
+                        |> Option.bind (fun w -> if w.Samples < w.CWheel.Length then None else Some w) //if not enough samples, don't pass dist
+                        |> Option.map (fun w -> w.CWheel |> spinWheel |> reify)                        //sample from dist
+                        |> Option.defaultValue (GraphOps.randActivation None)                          //random, if None
 
 
                     let bias = 
                         pm 
                         |> Map.tryFind PBias 
                         |> Option.map caseWheel
-                        |> Option.map (spinWheel >> reify)                      //sample from dist
-                        |> Option.defaultValue (GraphOps.randBias())            //random, if None
+                        |> Option.bind (fun w -> if w.Samples < w.CWheel.Length then None else Some w) //if not enough samples, don't pass dist
+                        |> Option.map (fun w -> w.CWheel |> spinWheel |> reify)                        //sample from dist
+                        |> Option.defaultValue (GraphOps.randBias())                                   //random, if None
 
                     let d' = {d with Dims=dims; Activation=acts; Bias=bias}
                     Dense d'
@@ -83,14 +90,15 @@ module rec CAEvolve =
                     pm 
                     |> Map.tryFind PSpecies 
                     |> Option.map classWheel
-                    |> Option.map (fun w -> spinWheel w |> ModuleSpecies)                            //sample from dist
-                    |> Option.defaultValue (cfg.NumSpecies |> CAUtils.randSpecies |> ModuleSpecies)  //random, if None
+                    |> Option.bind (fun w -> if w.Samples < w.IWheel.Length then None else Some w)  //if not enough samples, don't pass dist
+                    |> Option.map (fun w -> w.IWheel |> spinWheel |> ModuleSpecies)                 //sample from dist
+                    |> Option.defaultValue (cfg.NumSpecies |> CAUtils.randSpecies |> ModuleSpecies) //random, if None
 
                 | Cell (Norm nt) ->
                     pm 
                     |> Map.tryFind PNorm 
                     |> Option.map caseWheel
-                    |> Option.map (fun w -> spinWheel w |> reify |> Norm)                            //sample from dist
+                    |> Option.map (fun w -> w.CWheel |> spinWheel |> reify |> Norm)                  //sample from dist
                     |> Option.defaultValue (GraphOps.randNormalization (Some nt) |> Norm)            //random, if None
 
                 | x -> failwithf "case not handled %A" x
