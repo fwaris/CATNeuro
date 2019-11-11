@@ -11,56 +11,56 @@ module rec KDStagHunt =
         [
             0, [|                    
                 Situational     , 0.7
-                Normative       , 0.2
-                Historical      , 0.0
-                Topgraphical    , 0.0
-                Domain          , 0.3
+                Normative       , 0.3
+                Historical      , 0.1
+                Topgraphical    , 0.1
+                Domain          , 0.1
                |]
 
             1, [|                    
-                Situational     , 0.2
+                Situational     , 0.3
                 Normative       , 0.7
-                Historical      , 0.0   
-                Topgraphical    , 0.0
-                Domain          , 0.3
+                Historical      , 0.3   
+                Topgraphical    , 0.1
+                Domain          , 0.1
                |]
 
             2, [|                    
-                Situational     , 0.5
-                Normative       , 0.5
-                Historical      , 0.1   
-                Topgraphical    , 0.0
-                Domain          , 0.3
+                Situational     , 0.1
+                Normative       , 0.3
+                Historical      , 0.7   
+                Topgraphical    , 0.3
+                Domain          , 0.1
                |]
 
             3, [|                    
                 Situational     , 0.1
-                Normative       , 0.2
-                Historical      , 0.5   
-                Topgraphical    , 0.0
-                Domain          , 0.2
+                Normative       , 0.1
+                Historical      , 0.3   
+                Topgraphical    , 0.7
+                Domain          , 0.3
                |]
 
             4, [|                    
-                Situational     , 0.0
+                Situational     , 0.1
                 Normative       , 0.1
                 Historical      , 0.1   
-                Topgraphical    , 0.7
-                Domain          , 0.5
+                Topgraphical    , 0.3
+                Domain          , 0.7
                |]
 
             5, [|                    
-                Situational     , 0.0
+                Situational     , 0.1
                 Normative       , 0.1
-                Historical      , 0.0   
-                Topgraphical    , 0.2
+                Historical      , 0.1   
+                Topgraphical    , 0.3
                 Domain          , 0.7
                |]
             6, [|                    
-                Situational     , 0.0
+                Situational     , 0.1
                 Normative       , 0.1
-                Historical      , 0.1 //backtrack  
-                Topgraphical    , 0.2
+                Historical      , 0.1   
+                Topgraphical    , 0.3
                 Domain          , 0.7
                |]
 
@@ -117,7 +117,7 @@ module rec KDStagHunt =
     let fitnessById (i:Individual) = i.Id, i.Fitness
     ///distribute knowledge for cooperative phase
     let cooperativeDist ca st speciesType (pop:Individual[]) = //assume pop is sorted in order of index
-        let pct =  [0.9; 0.8; 0.7; 0.6].[st.ShState.GensSinceInit |> min 3]
+        let pct =  [0.8; 0.7; 0.6; 0.5].[st.ShState.GensSinceInit |> min 3]
         printfn "pct %f" pct
         let pop' =
             pop

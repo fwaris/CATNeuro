@@ -45,7 +45,7 @@ module rec CAEvolve =
                 |> Option.bind (fun xs->if Array.length xs >= 2 then Some(xs) else None) //don't use distribution if only 1 point in set
                 |> Option.map (CAUtils.sampleDensity bw >> clampR)   //sample from kernel density estimate
                 |> Option.defaultValue (CATProb.GAUSS lr.Rate 1.0 |> clampR)     //sample from gaussian
-            printfn "learning rate %f" lr'
+            //printfn "learning rate %f" lr'
             {lr with Rate=lr'}
 
         ///update parameters of the given node by following the 'norms' 
