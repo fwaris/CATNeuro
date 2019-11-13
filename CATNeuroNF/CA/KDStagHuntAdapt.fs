@@ -10,58 +10,58 @@ module rec KDStagHunt =
     let kdDistByRank =
         [
             0, [|                    
-                Situational     , 0.7
-                Normative       , 0.3
-                Historical      , 0.1
-                Topgraphical    , 0.1
-                Domain          , 0.1
+                Normative       , 0.7
+                Historical      , 0.3
+                Situational     , 0.1
+                Topgraphical    , 0.0
+                Domain          , 0.0
                |]
 
             1, [|                    
+                Normative       , 0.3
+                Historical      , 0.7
                 Situational     , 0.3
-                Normative       , 0.7
-                Historical      , 0.3   
                 Topgraphical    , 0.1
-                Domain          , 0.1
+                Domain          , 0.0
                |]
 
             2, [|                    
-                Situational     , 0.1
-                Normative       , 0.3
-                Historical      , 0.7   
+                Normative       , 0.1
+                Historical      , 0.3
+                Situational     , 0.7
                 Topgraphical    , 0.3
                 Domain          , 0.1
                |]
 
             3, [|                    
-                Situational     , 0.1
-                Normative       , 0.1
-                Historical      , 0.3   
+                Normative       , 0.0
+                Historical      , 0.1
+                Situational     , 0.3
                 Topgraphical    , 0.7
                 Domain          , 0.3
                |]
 
             4, [|                    
-                Situational     , 0.1
-                Normative       , 0.1
-                Historical      , 0.1   
-                Topgraphical    , 0.3
-                Domain          , 0.7
+                Normative       , 0.0
+                Historical      , 0.1
+                Situational     , 0.3
+                Topgraphical    , 0.7
+                Domain          , 0.3
                |]
 
             5, [|                    
+                Normative       , 0.0
+                Historical      , 0.0
                 Situational     , 0.1
-                Normative       , 0.1
-                Historical      , 0.1   
                 Topgraphical    , 0.3
-                Domain          , 0.8
+                Domain          , 0.7
                |]
             6, [|                    
+                Normative       , 0.0
+                Historical      , 0.0
                 Situational     , 0.1
-                Normative       , 0.1
-                Historical      , 0.1   
-                Topgraphical    , 0.3
-                Domain          , 0.9
+                Topgraphical    , 0.7
+                Domain          , 0.7
                |]
 
         ]
@@ -84,6 +84,20 @@ module rec KDStagHunt =
     ///check if competitive or cooperative phase                      
     let isCompetitiveGen st = st.ShState.GensSinceInit > st.ShState.CoopGens
 
+    let ksOrder = 
+        [|
+            Normative       
+            Historical      
+            Situational     
+            Topgraphical    
+            Domain          
+        |]
+
+    //choose next exploitative down from current
+    let slideDown ks = 
+        let i =  ksOrder |> Array.findIndex (fun x->x=ks )
+        ksOrder.[ i - 1 |> max 0]
+
     ///distribute knowledge for competitive phase
     let competitiveDist ca st species pop = 
         let fitAtInit = st.ShState.FitnessAtInit
@@ -91,7 +105,7 @@ module rec KDStagHunt =
             pop
             |> Array.map (fun indv ->
                 if indv.Fitness.[0] < fitAtInit.[indv.Id].[0] then
-                    indv //keep KS
+                    {indv with KS=slideDown indv.KS}
                 else
                     let frnds = ca.Network pop indv.Id 
                     let all = Array.append frnds [|indv|]
