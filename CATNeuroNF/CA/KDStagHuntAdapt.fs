@@ -96,7 +96,13 @@ module rec KDStagHunt =
     //choose next exploitative down from current
     let slideDown ks = 
         let i =  ksOrder |> Array.findIndex (fun x->x=ks )
-        ksOrder.[ i - 1 |> max 0]
+        let i = if i > 0 then i - 1 else ksOrder.Length - 1
+        ksOrder.[i]
+
+    let slideUp ks = 
+        let i =  ksOrder |> Array.findIndex (fun x->x=ks )
+        let i = (i + 1) % ksOrder.Length
+        ksOrder.[i]
 
     ///distribute knowledge for competitive phase
     let competitiveDist ca st species pop = 
@@ -107,15 +113,17 @@ module rec KDStagHunt =
                 if indv.Fitness.[0] < fitAtInit.[indv.Id].[0] then
                     {indv with KS=slideDown indv.KS}
                 else
-                    let frnds = ca.Network pop indv.Id 
-                    let all = Array.append frnds [|indv|]
-                    let dominantKs,_ = 
-                        all 
-                        |> Array.groupBy (fun x -> x.KS)
-                        |> Array.map(fun (k,xs) -> k,xs|>Array.map(fun y->y.Fitness.[0]) |> Array.sum)
-                        |> Array.sortBy snd
-                        |> Array.item 0
-                    {indv with KS=dominantKs})
+                    {indv with KS=slideUp indv.KS}
+                    //let frnds = ca.Network pop indv.Id 
+                    //let all = Array.append frnds [|indv|]
+                    //let dominantKs,_ = 
+                    //    all 
+                    //    |> Array.groupBy (fun x -> x.KS)
+                    //    |> Array.map(fun (k,xs) -> k,xs|>Array.map(fun y->y.Fitness.[0]) |> Array.sum)
+                    //    |> Array.sortBy snd
+                    //    |> Array.item 0
+                    //{indv with KS=dominantKs}
+                    )
 
         let fitAtInit' = pop' |> Array.map (fun ind->ind.Id,ind.Fitness) |> Map.ofArray
 
