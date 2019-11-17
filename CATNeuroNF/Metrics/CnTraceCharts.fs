@@ -118,7 +118,9 @@ module CnTrace =
                         d1 <- (d1,parms) ||> Array.fold (fun acc p -> 
                             match p with 
                             | MDensity densty   -> let b,xs = estimateB densty.Density
-                                                   let b = max 1.0 b
+                                                   let b = max b 0.1
+                                                   //let rng = abs ((Seq.max densty.Density) - (Seq.min densty.Density))
+                                                   //let b = if b <= 0. then (rng / 10.) else b
                                                    let ds = dns b xs densty.Density
                                                    acc  |> Map.add (densty.Innov,densty.Parm) {|S=densty.Density.Length; Xs=xs; Ys=ds |}
                             | _                 -> acc
