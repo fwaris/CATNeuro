@@ -140,7 +140,7 @@ module rec KDStagHunt =
     ///distribute knowledge for cooperative phase
     let cooperativeDist ca st speciesType (pop:Individual[]) = //assume pop is sorted in order of index
         //let pct =  [0.8; 0.7; 0.6; 0.5].[st.ShState.GensSinceInit |> min 3]   //base line
-        let pct =  [0.8; 0.7; 0.6; 0.6].[st.ShState.GensSinceInit |> min 3]   
+        let pct =  [0.9; 0.6; 0.6; 0.9].[st.ShState.GensSinceInit |> min 3]   
         //let pct =  [0.7; 0.6; 0.4; 0.2].[st.ShState.GensSinceInit |> min 3]
         printfn "pct %f" pct
         let pop' =
