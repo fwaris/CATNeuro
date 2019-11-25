@@ -2,6 +2,8 @@
 open CATProb
 
 module rec GraphOps =
+    open System
+
     let isInput (n:Node) = match n.Type with Input _ | ModInput -> true | _ -> false
     let isOutput (n:Node) = match n.Type with Output _ | ModOutput -> true | _ -> false
     let inputName (n:Node) = match n.Type with Input n -> n | _ -> failwith "not named input node"
@@ -199,18 +201,26 @@ module rec GraphOps =
 
         loop [] acs bcs
 
+    ///check if 2nd id was created after the 1st id
+    let is2ndLater (Id a) (Id b) = 
+        match Int32.TryParse a, Int32.TryParse b with 
+        | (true,a),(true,b) -> a > b
+        | _                 -> false
 
     ///merge genes of two parents
     ///parent a is considered dominant (fitter)
     let crossover cfg (a:Graph) (b:Graph) =
         let ms = diffConn a b
+
         let nodes,conns = (([],[]),ms) ||> List.fold (fun (ns,cs) mtch -> 
             match mtch with
             | Same c | Diff (c,_) | FrmL c | ExtraL c -> a.Nodes.[c.From]::a.Nodes.[c.To]::ns,c::cs
             | FrmR c | ExtraR c                       -> b.Nodes.[c.From]::b.Nodes.[c.To]::ns,c::cs
             )
+
         let inputs = nodes |> List.filter isInput |> List.map(fun i->i.Id) |> set
         let conns' = conns |> List.filter (fun c->inputs.Contains c.To |> not)   //ensure connections point to input
+
         let connUnique = 
             (Map.empty,conns') 
             ||> List.fold (fun acc c ->
@@ -220,7 +230,19 @@ module rec GraphOps =
                     | None    -> c
                 acc |> Map.add (c'.From,c'.To) c)
         let conns'' = connUnique |> Map.toSeq |> Seq.map snd |> Seq.toList
-        {a with Nodes=nodes |> List.map (fun n->n.Id,n) |> Map.ofList; Conns=conns''}
+
+        let nodes' = nodes |> List.map (fun n->n.Id,n) |> Map.ofList
+
+        //only keep connections from low numbered nodes to high numbered ones
+        //otherwise it may lead to cycles
+        let connFwd = 
+            conns'' 
+            |> Seq.filter (fun c -> 
+                (isInput nodes'.[c.From]) 
+                || (isOutput nodes'.[c.To]) 
+                || (is2ndLater c.From c.To)) 
+
+        {a with Nodes=nodes' ; Conns=conns''}
 
     ///add node to graph by splitting a connection
     //('complexify' in NEAT)
