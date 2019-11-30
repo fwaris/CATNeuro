@@ -271,8 +271,8 @@ module rec GraphOps =
             printfn "max nodes reached"
             None
         else
-            let forwardConn = {On=true; Innovation=cfg.IdGen.conn(); From=newNode.Id; To=conn.To}
             let backConn = {conn with To=newNode.Id; Innovation=cfg.IdGen.conn()}
+            let forwardConn = {On=true; Innovation=cfg.IdGen.conn(); From=newNode.Id; To=conn.To}
             let disConn = {conn with On=false}
             let conns = g.Conns |> updateConns conn [backConn;forwardConn;disConn] 
             Some {g with Nodes=g.Nodes |> Map.add newNode.Id newNode; Conns=conns}

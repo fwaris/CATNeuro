@@ -4,7 +4,7 @@ open CATNeuro.GraphDiag
 open CATNeuro.GraphOps
 open CNSetEnv
 
-let cfg = Cfg.Default
+let cfg = Cfg.Default()
 let p = LearningParms.Default
 
 let sampleGraph() =
