@@ -100,6 +100,8 @@ module rec GraphOps =
                         else
 
                             Choice1Of2 (adjM,inputs)
+    
+    exception Cycle of Id
 
     ///topologically sort grpah
     let tsort (g:Graph) =
@@ -117,7 +119,7 @@ module rec GraphOps =
                 acc |> List.rev
             else
                 let (dgr,id) as minE = q |> Set.minElement 
-                if dgr <> 0 then failwithf "Invalid graph: cycle detected involving node %A" id
+                if dgr <> 0 then raise (Cycle id)//failwithf "Invalid graph: cycle detected involving node %A" id
                 let conns = adjM.[id]
                 let q = q |> Set.remove minE
                 let (m,q) = ((m,q),conns) ||> List.fold (fun (m,q) toId -> 
@@ -133,6 +135,24 @@ module rec GraphOps =
                     (m,q))
                 loop (id::acc) m q
         loop [] inDegrees q
+
+    let removeLinkTo (g:Graph) id =
+        let incomings = g.Conns |> List.filter (fun c->c.To = id)
+        if incomings.Length <=1 then failwithf "no cycle for id %A" id
+        let toRmove = incomings |> List.maxBy (fun c->c.Innovation)    //remove last innovation
+        {g with Conns = g.Conns |> List.filter (fun c-> c <> toRmove)}        
+
+    let eliminateCycle g =
+        let rec loop g =
+            try
+                let _ = tsort g
+                g
+            with (Cycle id) -> 
+                let g' = removeLinkTo g id
+                printfn "remove cycled for %A" id
+                loop g'
+        loop g
+
 
     ///get a randomly selected connection
     let randConnForToggle (g:Graph) = 
@@ -204,7 +224,7 @@ module rec GraphOps =
     ///check if 2nd id was created after the 1st id
     let is2ndLater (Id a) (Id b) = 
         match Int32.TryParse a, Int32.TryParse b with 
-        | (true,a),(true,b) -> a > b
+        | (true,a),(true,b) -> a < b
         | _                 -> false
 
     ///merge genes of two parents
@@ -235,14 +255,16 @@ module rec GraphOps =
 
         //only keep connections from low numbered nodes to high numbered ones
         //otherwise it may lead to cycles
-        let connFwd = 
-            conns'' 
-            |> Seq.filter (fun c -> 
-                (isInput nodes'.[c.From]) 
-                || (isOutput nodes'.[c.To]) 
-                || (is2ndLater c.From c.To)) 
+        //let connFwd = 
+        //    conns'' 
+        //    |> List.filter (fun c -> 
+        //        (isInput nodes'.[c.From]) 
+        //        || (isOutput nodes'.[c.To]) 
+        //        || (is2ndLater c.From c.To)) 
 
-        {a with Nodes=nodes' ; Conns=conns''}
+
+        let g = {a with Nodes=nodes' ; Conns=conns''}
+        eliminateCycle g
 
     ///add node to graph by splitting a connection
     //('complexify' in NEAT)
