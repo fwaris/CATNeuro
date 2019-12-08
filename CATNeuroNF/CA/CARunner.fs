@@ -7,7 +7,8 @@ open CnMetrics
 type EvaluatedAssembly = {Assembly:NetworkAssembly; Fit:float[]}
 type TimeStep= {CA:CA ; Best:EvaluatedAssembly[]; Count:int; State:Map<SpeciesType,CAState>}
 
-module rec CARunner =
+module rec CARunner =   
+    let MAX_BEST = 20
     let isBlueprint = function Blueprint _  -> true | _ -> false 
     let moduleId    = function Module x     -> Some x | _ -> None
 
@@ -129,7 +130,7 @@ module rec CARunner =
         let unrankedFit = toRank |> Map.toArray |> Array.map (fun (i,ea) -> i, ea.Fit)
         let rankedFit = ca''.ParetoRank unrankedFit
         let rankedAsmbls = rankedFit |> Array.map (fun i -> toRank.[i])
-        let newBest = rankedAsmbls |> Array.truncate 5        
+        let newBest = rankedAsmbls |> Array.truncate MAX_BEST        
         {st with 
             Best    = newBest 
             CA      = ca''
