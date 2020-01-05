@@ -9,7 +9,7 @@ type NodeType = Cell of CellType | Output of Dense | Input of string | ModInput 
 type Conn = {On:bool; From:Id; To:Id; Innovation:int}
 type Bias = On | Off
 type Dense = {Dims:int; Bias:Bias; Activation:Activation}
-type Activation = NONE | Elu | Relu | LeakyRelu | Sig
+type Activation = NONE | Elu | Relu | LeakyRelu | Sig |  TanH
 type LearningParms = {Rate:float;} with static member Default = {Rate=0.01}
 type Graph = {Nodes:Map<Id,Node>; Conns:Conn list}
 

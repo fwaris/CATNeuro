@@ -6,6 +6,7 @@ module rec GraphOps =
 
     let isInput (n:Node) = match n.Type with Input _ | ModInput -> true | _ -> false
     let isOutput (n:Node) = match n.Type with Output _ | ModOutput -> true | _ -> false
+    let isNorm (n:Node) = match n.Type with Cell (Norm _) -> true | _ -> false
     let inputName (n:Node) = match n.Type with Input n -> n | _ -> failwith "not named input node"
 
     let randBias() = if RNG.Value.NextDouble() < 0.5 then Bias.On else Bias.Off
@@ -192,9 +193,10 @@ module rec GraphOps =
                     for j in 1..ns.Length-1 do
                     if i < j then
                         match ns.[i],ns.[j] with
-                        | f,t when connected.Contains(f,t) -> ()
-                        | f,t when g.Nodes.[t] |> isInput  -> ()
-                        | f,t                              -> yield (f,t)
+                        | f,t when connected.Contains(f,t)                  -> () // already connected
+                        | f,t when g.Nodes.[t] |> isInput                   -> () // input
+                        | f,t when isNorm g.Nodes.[f] && isNorm g.Nodes.[t] -> () // do not connect two normalization layers
+                        | f,t                                               -> yield (f,t)
                 }
             |> Seq.toArray
         if unconnected.Length = 0 then

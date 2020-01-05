@@ -27,7 +27,14 @@ module rec TopographicKS =
             |> Array.map (fun indv -> 
                 let cntrd = CATProb.spinWheel tpst.SpinWheel 
                 let p2 = cntrd.Best
-                evolveIndv cfg st speciesType policy (Some p2) indv)
+                let influencedIndv = 
+                    if RNG.Value.NextDouble() < 0.3 then 
+                        let c2 = tpst.SpinWheel |> Array.filter(fun (c,_)->c<>cntrd) |> createWheel |>CATProb.spinWheel
+                        {indv with Graph = c2.Best.Graph}
+                    else
+                        indv
+                    
+                evolveIndv cfg st speciesType policy (Some p2) influencedIndv)
         st,indvs'
 
 

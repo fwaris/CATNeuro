@@ -141,8 +141,8 @@ module CAUtils =
             | Module _ , _              , Cell (Norm _)
             | Module _ , ModInput       , ModOutput
             | Module _ , ModInput       , Cell (Norm _) 
-            | Module _ , Cell (Norm _)  , ModOutput                      -> GraphOps.genDenseCell cfg
             | Module _ , ModInput       , Cell (Dense _)
+            | Module _ , Cell (Norm _)  , ModOutput                      -> GraphOps.genDenseCell cfg
             | Module _ , Cell (Dense _) , Cell (Dense _)
             | Module _ , Cell (Dense _) , ModOutput                      -> denseOrNorm frac cfg
             //blueprint connection
