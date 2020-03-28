@@ -39,11 +39,14 @@ module rec CAEvolve =
             let clampR = clamp cfg.LearnRange.Lo cfg.LearnRange.Hi
             let bw = (cfg.LearnRange.Hi - cfg.LearnRange.Lo) / 10.0
             let lr' =
-                nmst.Norms.[META_INV] 
-                |> Map.tryFind PLearnRate
-                |> Option.map mass  
-                |> Option.bind (fun xs->if Array.length xs >= 2 then Some(xs) else None) //don't use distribution if only 1 point in set
-                |> Option.map (CAUtils.sampleDensity bw >> clampR)   //sample from kernel density estimate
+                nmst.Norms
+                |> Map.tryFind META_INV
+                |> Option.bind(fun m -> 
+                    m
+                    |> Map.tryFind PLearnRate
+                    |> Option.map mass  
+                    |> Option.bind (fun xs->if Array.length xs >= 2 then Some(xs) else None) //don't use distribution if only 1 point in set
+                    |> Option.map (CAUtils.sampleDensity bw >> clampR))   //sample from kernel density estimate 
                 |> Option.defaultValue (CATProb.GAUSS lr.Rate 1.0 |> clampR)     //sample from gaussian
             //printfn "learning rate %f" lr'
             {lr with Rate=lr'}

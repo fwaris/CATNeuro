@@ -5,56 +5,6 @@ open FSharp.Reflection
 open Ext
 open System
 
-type ShState = 
-    {
-        FitnessAtInit   : Map<int,float[]>
-        GensSinceInit   : int
-        CoopGens        : int
-    }
-
-type HsState = {Events:Individual list; Window:int}
-
-type DmState = {EliteFrac:float; NormNodeProb:float}
-type SiState = {Exemplars:Individual[]; SpinWheel:(Graph*float)[]}
-
-type CaseWheel = {Samples:int; CWheel:(UnionCaseInfo*float)[]}
-type IntWheel = {Samples:int; IWheel:(int*float)[]}
-type ParmType = PDims | PActivation | PBias | PSpecies | PNorm | PLearnRate
-type ClassInfo = {TotalClasses:int; Refs:int list}
-type DistVal = Case of UnionCaseInfo | Cont of float | Class of ClassInfo
-type Dist = Cases of CaseWheel | Density of float[] | Classes of IntWheel
-
-type NmState =
-    {
-        TopIndv : Individual[]
-        MaxIndv : int
-        Norms   : Map<int,Map<ParmType,Dist>> //norms organized by innovation#
-    }
-
-type Centroid =
-    {
-        Center  : Individual
-        Count   : int
-        Best    : Individual
-    }
-
-type TpState = 
-    {
-        Centroids : Centroid list
-        CIndvs    : Individual[]
-        SpinWheel : (Centroid*float)[]
-    }
-
-type CAState = 
-    {
-        Gen     : int
-        ShState : ShState
-        HsState : HsState
-        DmState : DmState
-        NmState : NmState
-        TpState : TpState
-        SiState : SiState
-    }
 
 
 module MUtils =

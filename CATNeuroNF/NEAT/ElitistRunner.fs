@@ -1,10 +1,10 @@
 ﻿namespace CATNeuro
 open CATProb
 open Ext
-open BeliefSpace
+open ElitistBeliefSpace
 open CnMetrics
 
-module rec CARunner =   
+module rec ElitistRunner =   
     let MAX_BEST = 20
     let isBlueprint = function Blueprint _  -> true | _ -> false 
     let moduleId    = function Module x     -> Some x | _ -> None
@@ -88,9 +88,11 @@ module rec CARunner =
         let bprints' = {bprints with Individuals = bprints.Individuals |> Array.map (fun indv -> {indv with Fitness =  fmap.[indv.Id]})}
         {ca with Populations=Array.append [|bprints'|] spcs'}
 
-    let knowledgeDist  = function 
-        | Stag_Hunt     -> KDStagHunt.distributeKnowledge
-        | Wtd_Majority  -> KDWtdMajority.distributeKnowledge
+    let knowledgeDist _ = fun ca cfg species st pop -> st,pop
+        //no distribution required in NEAT
+        //function 
+        //    | Stag_Hunt     -> KDStagHunt.distributeKnowledge
+        //    | Wtd_Majority  -> KDWtdMajority.distributeKnowledge
 
     ///step through CA for each population
     let stepPopulations  (st:Map<SpeciesType,CAState>) (ca:CA) = 
@@ -195,3 +197,4 @@ module rec CARunner =
             |> Map.ofArray
 
         {CA=ca'; Count=0; Best=[||]; State=state}
+

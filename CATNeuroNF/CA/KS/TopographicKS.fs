@@ -67,7 +67,7 @@ module rec TopographicKS =
         {Centroids=cntrds; SpinWheel=wheel; CIndvs=indvs}
 
 
-    let toCentroid ca (c,members) =
+    let toCentroid ca (c,members) : Centroid =
         let lbest = CAUtils.rankIndvs ca members |> Seq.head
         {
             Center = c

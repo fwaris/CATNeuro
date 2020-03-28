@@ -32,8 +32,6 @@
 #load @"..\CA\KS\TopographicKS.fs"
 #load @"..\CA\BeliefSpace.fs"
 #load @"..\CA\CARunner.fs"
-
-
-
-
-
+#load @"..\NEAT\ElitistKS.fs"
+#load @"..\NEAT\ElitistBeliefSpace.fs"
+#load @"..\NEAT\ElitistRunner.fs"

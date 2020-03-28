@@ -65,6 +65,9 @@
     <Compile Include="CA\KS\TopographicKS.fs" />
     <Compile Include="CA\BeliefSpace.fs" />
     <Compile Include="CA\CARunner.fs" />
+    <Compile Include="NEAT\ElitistKS.fs" />
+    <Compile Include="NEAT\ElitistBeliefSpace.fs" />
+    <Compile Include="NEAT\ElitistRunner.fs" />
     <Content Include="Docs\NeuroEvolution.txt" />
     <None Include="Tests\CNReferences.fsx" />
     <None Include="Tests\CNSetEnv.fsx" />
