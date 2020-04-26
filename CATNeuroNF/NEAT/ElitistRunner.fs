@@ -90,6 +90,7 @@ module rec ElitistRunner =
 
     let knowledgeDist _ = fun ca cfg species st pop -> st,pop
         //no distribution required in NEAT
+
         //function 
         //    | Stag_Hunt     -> KDStagHunt.distributeKnowledge
         //    | Wtd_Majority  -> KDWtdMajority.distributeKnowledge

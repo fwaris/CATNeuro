@@ -5,6 +5,8 @@ VisualStudioVersion = 16.0.29102.190
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "CATNeuroNF", "CATNeuroNF\CATNeuroNF.fsproj", "{2D312756-B788-4C8E-95EB-ABBD95C8C491}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "CATNeuroCore", "CATNeuroCore\CATNeuroCore.fsproj", "{5DBCC269-C752-4409-9A11-9D9AB2E8A198}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{2D312756-B788-4C8E-95EB-ABBD95C8C491}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2D312756-B788-4C8E-95EB-ABBD95C8C491}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2D312756-B788-4C8E-95EB-ABBD95C8C491}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5DBCC269-C752-4409-9A11-9D9AB2E8A198}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5DBCC269-C752-4409-9A11-9D9AB2E8A198}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5DBCC269-C752-4409-9A11-9D9AB2E8A198}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5DBCC269-C752-4409-9A11-9D9AB2E8A198}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

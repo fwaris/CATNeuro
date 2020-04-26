@@ -1,0 +1,56 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+	  <TargetFrameworks>netstandard2.0;net5.0</TargetFrameworks>
+	  <LangVersion>preview</LangVersion>
+	  <Version>1.0.1</Version>
+	  <AssemblyVersion>1.0.1.1</AssemblyVersion>
+	  <FileVersion>1.0.1.1</FileVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="..\CATNeuroNF\CATProb.fs" Link="CATProb.fs" />
+    <Compile Include="..\CATNeuroNF\KMeans.fs" Link="KMeans.fs" />
+    <Compile Include="..\CATNeuroNF\Extensions.fs" Link="Extensions.fs" />
+    <Folder Include="CA\KD\" />
+    <Folder Include="Metrics\" />
+    <Compile Include="..\CATNeuroNF\Metrics\CnObservableExt.fs" Link="Metrics\CnObservableExt.fs" />
+    <Compile Include="..\CATNeuroNF\Metrics\CnMetrics.fs" Link="Metrics\CnMetrics.fs" />
+    <Compile Include="..\CATNeuroNF\Types.fs" Link="Types.fs" />
+    <Folder Include="Graph\" />
+    <Compile Include="..\CATNeuroNF\Graph\GraphOps.fs" Link="Graph\GraphOps.fs" />
+    <Compile Include="..\CATNeuroNF\Graph\GraphDiag.fs" Link="Graph\GraphDiag.fs" />
+    <Compile Include="..\CATNeuroNF\CA\CAUtils.fs" Link="CA\CAUtils.fs" />
+    <Compile Include="..\CATNeuroNF\CA\CAEvolve.fs" Link="CA\CAEvolve.fs" />
+    <Compile Include="..\CATNeuroNF\CA\KDStagHunt.fs" Link="CA\KD\KDStagHunt.fs" />
+    <Compile Include="..\CATNeuroNF\CA\KDStagHuntAdapt.fs" Link="CA\KD\KDStagHuntAdapt.fs" />
+    <Compile Include="..\CATNeuroNF\CA\KDWtdMajority.fs" Link="CA\KD\KDWtdMajority.fs" />
+    <Compile Include="..\CATNeuroNF\CA\StagHuntStoch.fs" Link="CA\KD\StagHuntStoch.fs" />
+    <Folder Include="CA\KS\" />
+    <Compile Include="..\CATNeuroNF\CA\KS\DomainKS.fs" Link="CA\KS\DomainKS.fs" />
+    <Compile Include="..\CATNeuroNF\CA\KS\HistoryKS.fs" Link="CA\KS\HistoryKS.fs" />
+    <Compile Include="..\CATNeuroNF\CA\KS\NormativeKS.fs" Link="CA\KS\NormativeKS.fs" />
+    <Compile Include="..\CATNeuroNF\CA\KS\SituationalKS.fs" Link="CA\KS\SituationalKS.fs" />
+    <Compile Include="..\CATNeuroNF\CA\KS\TopographicKS.fs" Link="CA\KS\TopographicKS.fs" />
+    <Compile Include="..\CATNeuroNF\CA\BeliefSpace.fs" Link="CA\BeliefSpace.fs" />
+    <Compile Include="..\CATNeuroNF\CA\CARunner.fs" Link="CA\CARunner.fs" />
+    <Folder Include="NEAT\" />
+    <Compile Include="..\CATNeuroNF\NEAT\ElitistKS.fs" Link="NEAT\ElitistKS.fs" />
+    <Compile Include="..\CATNeuroNF\NEAT\ElitistBeliefSpace.fs" Link="NEAT\ElitistBeliefSpace.fs" />
+    <Compile Include="..\CATNeuroNF\NEAT\ElitistRunner.fs" Link="NEAT\ElitistRunner.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FSharp.Collections.ParallelSeq" Version="1.1.3" />
+    <PackageReference Include="FsPickler" Version="5.3.2" />
+    <PackageReference Include="MathNet.Numerics.FSharp" Version="4.9.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="4.7.1" />
+  </ItemGroup>
+
+  <ItemGroup />
+
+</Project>

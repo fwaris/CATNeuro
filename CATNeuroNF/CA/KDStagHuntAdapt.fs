@@ -11,42 +11,42 @@ module rec KDStagHunt =
         [
             0, [|                    
                 Normative       , 0.7
-                Historical      , 0.3
+                Historical      , 0.1
                 Situational     , 0.1
                 Topgraphical    , 0.0
                 Domain          , 0.0
                |]
 
             1, [|                    
-                Normative       , 0.3
-                Historical      , 0.7
+                Normative       , 0.5
+                Historical      , 0.2
                 Situational     , 0.3
-                Topgraphical    , 0.1
-                Domain          , 0.0
+                Topgraphical    , 0.3
+                Domain          , 0.3
                |]
 
             2, [|                    
                 Normative       , 0.1
-                Historical      , 0.3
+                Historical      , 0.1
                 Situational     , 0.7
                 Topgraphical    , 0.3
-                Domain          , 0.1
+                Domain          , 0.3
                |]
 
             3, [|                    
                 Normative       , 0.0
-                Historical      , 0.1
+                Historical      , 0.0
                 Situational     , 0.3
                 Topgraphical    , 0.7
-                Domain          , 0.3
+                Domain          , 0.4
                |]
 
             4, [|                    
                 Normative       , 0.0
-                Historical      , 0.1
+                Historical      , 0.0
                 Situational     , 0.3
                 Topgraphical    , 0.7
-                Domain          , 0.3
+                Domain          , 0.5
                |]
 
             5, [|                    
