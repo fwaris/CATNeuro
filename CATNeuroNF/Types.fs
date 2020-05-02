@@ -11,6 +11,7 @@ type NodeType = Cell of CellType | Output of Dense | Input of string | ModInput 
 type Conn = {On:bool; From:Id; To:Id; Innovation:int}
 type Bias = On | Off
 type Dense = {Dims:int; Bias:Bias; Activation:Activation}
+type Conv2D = {Kernel:int; Filters:int; Stride:int; Activation:Activation}
 type Activation = NONE | Elu | Relu | LeakyRelu | Sig |  TanH
 type LearningParms = {Rate:float;} with static member Default = {Rate=0.01}
 type Graph = {Nodes:Map<Id,Node>; Conns:Conn list}
@@ -20,6 +21,7 @@ type NormalizationType = BatchNorm | LayerNorm
 type CellType = 
     | ModuleSpecies of int 
     | Dense of Dense
+    | Conv2D of Conv2D
     | Norm of NormalizationType
     | SubGraph of Graph
 
@@ -38,17 +40,35 @@ type IndvidualType = BlueprintIndv of LearningParms | ModuleIndv
 
 type Cfg =
     {
-        MaxNodes    : int
-        NumSpecies  : int
-        DenseRange  : Range
-        LearnRange  : Range
-        IdGen       : IdGen
+        MaxNodes            : int
+        NumSpecies          : int
+        EliteFraction       : float
+        WtSlctn_NormNode    : float 
+        WtSlctn_DenseNode   : float
+        WtSlctn_CovnNode    : float //set to 0. for no convolution 
+        AllowDropInputs     : bool
+        DenseRange          : Range
+        KernelRange         : Range
+        FiltersRange        : Range
+        StrideRange         : Range
+        LearnRange          : Range
+        IdGen               : IdGen
     }
-    static member Default() = {  NumSpecies=2; 
-                                 IdGen=IdGen()
-                                 DenseRange={Lo=5.; Hi=20.}
-                                 LearnRange={Lo=0.001; Hi=0.1}
-                                 MaxNodes=10;}
+    static member Default() = {  
+                                 MaxNodes           = 10
+                                 NumSpecies         = 2; 
+                                 EliteFraction      = 0.5
+                                 WtSlctn_NormNode   = 0.1
+                                 WtSlctn_DenseNode  = 1.0
+                                 WtSlctn_CovnNode   = 0.0
+                                 AllowDropInputs    = false
+                                 IdGen              = IdGen()
+                                 DenseRange         = {Lo=5.;    Hi=20.}
+                                 KernelRange        = {Lo=2.;    Hi=20.}
+                                 FiltersRange       = {Lo=2.;    Hi=200.}
+                                 StrideRange        = {Lo=1.;    Hi=10.}
+                                 LearnRange         = {Lo=0.001; Hi=0.1}
+                              }
 
 type Knowledge  = Situational | Historical | Normative | Topgraphical | Domain 
 
@@ -105,7 +125,7 @@ type ShState =
 
 type HsState = {Events:Individual list; Window:int}
 
-type DmState = {EliteFrac:float; NormNodeProb:float}
+type DmState = {Gens:int}
 type SiState = {Exemplars:Individual[]; SpinWheel:(Graph*float)[]}
 
 type CaseWheel = {Samples:int; CWheel:(UnionCaseInfo*float)[]}

@@ -19,7 +19,7 @@ module rec CAT_CNTK_Types =
     type CnNode =  Id * CnNodeType
     type CnNodeType =
         | CnInp     of (string*Connector*CNTKNode)
-        | CnFunc    of (Connector*(CNTKNode->CNTKNode)) 
+        | CnFunc    of (string*Connector*(CNTKNode->CNTKNode)) 
         | CnOut     of (Connector*(CNTKNode->CNTKNode))
         | CnModule  of CnGraph
         | CnLinkIn 
@@ -54,13 +54,13 @@ module CAT_CNTK_Utils =
         match nt with
         | CnInp  (l,cn,_) -> n.Attr.Shape <- Shp.Ellipse
                              n.LabelText <- sprintf "%s [%s]" l (toDim cn.Out)
-        | CnFunc (cn,_)   -> n.Attr.Shape <- Shp.Box
-                             n.LabelText <- sprintf "%s [%s]" n.LabelText (toDim cn.Out)
+        | CnFunc (s,cn,_) -> n.Attr.Shape <- Shp.Box
+                             n.LabelText <- s
         | CnOut  (cn,_)   -> n.Attr.Shape <- Shp.DoubleCircle
                              n.LabelText <- sprintf "%s [%s]" n.LabelText (toDim cn.Out)
         | CnLinkIn        -> n.Attr.Shape <- Shp.Ellipse
         | CnLinkOut       -> n.Attr.Shape <- Shp.DoubleCircle
-        | CnModule  cng   ->  ()
+        | CnModule  cng   -> ()
 
     let styleEdge (e:Microsoft.Msagl.Drawing.Edge) =
         let tE = e.UserData :?> bool
@@ -74,11 +74,11 @@ module CAT_CNTK_Utils =
                 let nId = s
                 match nt with
                 | CnInp  (_,cn,_) //of (string*Connector*CNTKNode)
-                | CnFunc (cn,_) //of (Connector*(CNTKNode->CNTKNode)) 
+                | CnFunc (_,cn,_) //of (Connector*(CNTKNode->CNTKNode)) 
                 | CnOut  (cn,_) //of (Connector*(CNTKNode->CNTKNode))
-                             -> {Nid=N(sgId,nId);T=nt}::accN,accE
+                                -> {Nid=N(sgId,nId);T=nt}::accN,accE
                 | CnLinkIn 
-                | CnLinkOut  -> {Nid=N(sgId,nId);T=nt}::accN,accE
+                | CnLinkOut     -> {Nid=N(sgId,nId);T=nt}::accN,accE
                 | CnModule  cng -> 
                     let accN'= {Nid=S(sgId,nId);T=nt}::accN
                     collectNodes (accN',accE) (Some s) cng)
@@ -188,33 +188,45 @@ module CATNeuroCNTK =
         {CnNodes=acc'.Resolver; CnConns=g.Conns}
 
     and translateNode acc (nd:CATNode) =
+        let ds = CAUtils.description nd.Type
         match nd.Type with
-        | Input n           -> accNamedInput acc nd.Id n  //blueprint input
-        | ModInput          -> accInLink acc nd.Id
-        | ModOutput         -> accOutLink acc nd.Id
-        | Cell (Dense d)    -> accDense acc nd.Id d
-        | Cell (Norm normT) -> accNorm acc nd.Id normT
-        | Output d          -> accOutput acc nd.Id d
-        | Cell (SubGraph g) -> accSubGraph acc nd.Id g
+        | Input n           -> accNamedInput    ds acc nd.Id n  //blueprint input
+        | ModInput          -> accInLink        ds acc nd.Id
+        | ModOutput         -> accOutLink       ds acc nd.Id
+        | Cell (Dense d)    -> accDense         ds acc nd.Id d
+        | Cell (Conv2D cv2d) -> accConv2D       ds acc nd.Id cv2d
+        | Cell (Norm normT) -> accNorm          ds acc nd.Id normT
+        | Output d          -> accOutput        ds acc nd.Id d
+        | Cell (SubGraph g) -> accSubGraph      ds acc nd.Id g
         | x                 -> failwithf "unexpected cell type encountered in translation %A" x
 
-    and accSubGraph acc ndid g =
+    and accSubGraph ds acc ndid g =
         let cn = translateGraph Map.empty g |> CnModule
         accUpd acc ndid cn
    
-    and accInLink acc ndid = accUpd acc ndid CnLinkIn
-    and accOutLink acc ndid = accUpd acc ndid CnLinkOut 
+    and accInLink ds acc ndid = accUpd acc ndid CnLinkIn
+    and accOutLink ds acc ndid = accUpd acc ndid CnLinkOut 
 
-    and accDense acc ndid d = 
+    and accDense ds acc ndid d = 
         let layer  = L.Dense(
                         D d.Dims, 
                         activation=cnActivation d.Activation,
                         bias = cnBias d.Bias
                         )
-        let cn = CnFunc ({Inp=None;Out=Fixed d.Dims},layer)
+        let cn = CnFunc (ds,{Inp=None;Out=Fixed d.Dims},layer)
         accUpd acc ndid cn
 
-    and accOutput acc ndid d = 
+    and accConv2D ds  acc ndid cv2d = 
+        let layer  = L.Convolution(
+                        Ds [cv2d.Kernel; cv2d.Kernel],
+                        num_filters = cv2d.Filters,
+                        activation=cnActivation cv2d.Activation,
+                        strides= Ds [cv2d.Stride; cv2d.Stride]
+                        )
+        let cn = CnFunc (ds,{Inp=None;Out=Infer},layer)
+        accUpd acc ndid cn
+
+    and accOutput ds acc ndid d = 
         let layer  = L.Dense(
                         D d.Dims, 
                         activation=cnActivation d.Activation,
@@ -223,12 +235,12 @@ module CATNeuroCNTK =
         let cn = CnOut ({Inp=None;Out=Fixed d.Dims},layer)
         accUpd acc ndid cn
     
-    and accNorm acc ndid d = 
+    and accNorm ds acc ndid d = 
         let layer  = match d with  BatchNorm -> L.BN() | LayerNorm -> L.LayerNormalization()
-        let cn = CnFunc ({Inp=None;Out=Infer},layer)
+        let cn = CnFunc (ds,{Inp=None;Out=Infer},layer)
         accUpd acc ndid cn
 
-    and accNamedInput acc ndid name =
+    and accNamedInput ds acc ndid name =
         let (_,cn) = 
             acc.Resolver
             |> Map.tryFind ndid
@@ -253,7 +265,107 @@ module CATNeuroCNTK =
             | Infer     -> Infer //failwith "cannot infer dimensions"
             | Fixed d   -> Fixed d
 
+    (*
+        By 'combine, dimensions should be known
+        - dim > 1, all equal, then add 
+        - dim > 1, same rank, then add (this works due to broadcasting)
+        - dim > 1, dims not equal, flatten, pad and add
+        - dim = 1, splice, or add padded 
+
+    *)        
+
+    let merge (l,r) =
+        let ls = [l;r]
+        let ns = ls |> List.map (fun n->n)
+        let ndims = ns |> List.map (O.shape) |> List.map dims |> List.map (List.fold ( * ) 1) 
+        let dimSum = ndims |> Seq.map int64 |> Seq.sum 
+        if dimSum <= 200L then        
+                O.splice ns
+        else
+            let maxDim = ndims |> Seq.max
+            let ns' = 
+                List.zip ndims ns  
+                |> List.map (fun (d,n)-> 
+                    if d = maxDim then 
+                        n 
+                    else
+                        let df = (maxDim - d) / 2
+                        let extra = maxDim - ((df * 2) + d)
+                        let n' = O.pad(n, [(df,df+extra)])
+                        //printfn "%A - %A" (n |> O.shape |> dims) (n' |> O.shape |> dims)
+                        n'
+                        )
+            let shouldFlatten = let h = List.head ns |> O.shape in List.tail ns |> List.forall (fun  x -> h = O.shape x) |> not
+            let ns'' = if shouldFlatten then ns' |> List.map O.flatten else ns'
+            O.sum ns''
+
+    let (|Simple|_|) (l,r) =
+        let dL = (O.shape>>dims) l
+        let dR = (O.shape>>dims) r
+        if dL = dR && dL.Length = 1 then
+            Some (merge (l,r))
+        else
+            None
+
+    let (|SameDims|_|) (l,r) = 
+        let dL = (O.shape>>dims) l
+        let dR = (O.shape>>dims) r
+        if dL = dR then
+            Some (l + r)
+        else
+            None
+
+    let (|SameRank|_|) (l,r) =
+        let dL = (O.shape>>dims) l
+        let dR = (O.shape>>dims) r
+        if dL.Length = dR.Length && dL.Length > 1 && dL.[1..] = dR.[1..] then
+            Some (O.splice ([l;r],axis=new CNTK.Axis(0)))
+        else
+            None
+
+    let allOnesExcept1 ls = 
+        let nonOnes = ls |> List.countBy yourself |> List.filter (function (c,_) when c <> 1 -> true | _ -> false)
+        nonOnes.Length = ls.Length-1 
+
+    let (|Broadcastable|_|) (l,r) =
+        let dL = (O.shape>>dims) l
+        let dR = (O.shape>>dims) r
+        if allOnesExcept1 dL || allOnesExcept1 dR then
+            Some(l + r) //according to CNTK docs this should work
+        else
+            None
+
+    let (|Broadcasted|_|) (l,r) =
+        let dL = (O.shape>>dims) l
+        let dR = (O.shape>>dims) r
+        if dL.Length = 1 || dR.Length = 1 then
+            let a,aL,b,bL = if dL.Length = 1 then l,dL,r,dR else r,dR,l,dL
+            let aL' = aL @ (bL |> List.map( fun _ -> 1))
+            let a' = O.reshape(a, Ds aL')
+            Some (a' + b)
+        else
+            None
+
+    let (|Flattened|_|) (l,r) = merge (O.flatten l, O.flatten r) |> Some
+
+    let combine2 l r = 
+        match l,r with
+        | Simple cbn 
+        | SameDims cbn 
+        | SameRank cbn
+        | Broadcastable cbn 
+        | Broadcasted cbn
+        | Flattened cbn      -> cbn
+        | _                  -> failwithf "unable to merge %A %A" l r
+
+
     let combine (ctx:GenAcc) ls = 
+        let ns = ls |> List.map (fun n->n.N) |> List.sortByDescending (fun x->x |> O.shape |> dims |> List.length)
+        let ds = ns |> List.reduce ( combine2 )      //plus does broadcasting so can mix dimensions
+        let maxDim = volume ds
+        {DimDown=Fixed maxDim; N=ds}
+
+    let combine3 (ctx:GenAcc) ls = 
         match ls with
         | x::[] -> x
         | ls ->
@@ -279,7 +391,9 @@ module CATNeuroCNTK =
                             //printfn "%A - %A" (n |> O.shape |> dims) (n' |> O.shape |> dims)
                             n'
                             )
-                let combined = O.sum ns'
+                let shouldFlatten = let h = List.head ns |> O.shape in List.tail ns |> List.forall (fun  x -> h = O.shape x) |> not
+                let ns'' = if shouldFlatten then ns' |> List.map O.flatten else ns'
+                let combined = O.sum ns''
                 //printfn "Summed: graph  nodes %d | total dims = %d" ctx.Graph.CnNodes.Count maxDim
                 {DimDown=Fixed maxDim; N=combined}
 
@@ -299,13 +413,13 @@ module CATNeuroCNTK =
         match cn with
         | CnInp (_,cn,n) -> {acc with Resolution= acc.Resolution |> Map.add id {DimDown=cn.Out; N=n}}
 
-        | CnFunc(c,fn)  -> let c' = match c.Out with Infer -> {c with Out=inferDims acc.Cnctr} | _ -> c
-                           let acc' = {acc with Cnctr=Some c' }
-                           let acc'',inp = resolveIncoming acc' id
-                           let dim' = match c.Out with Fixed d -> Fixed d | _ -> inp.DimDown
-                           let n = fn inp.N
-                           let dr = {DimDown=dim'; N=n}
-                           acc'' |> addNode id dr
+        | CnFunc(ds,c,fn)  ->  let c' = match c.Out with Infer -> {c with Out=inferDims acc.Cnctr} | _ -> c
+                               let acc' = {acc with Cnctr=Some c' }
+                               let acc'',inp = resolveIncoming acc' id
+                               let dim' = match c.Out with Fixed d -> Fixed d | _ -> inp.DimDown
+                               let n = fn inp.N
+                               let dr = {DimDown=dim'; N=n}
+                               acc'' |> addNode id dr
 
         | CnModule  gr  -> let acc',inp = resolveIncoming acc id
                            let out = genSubModel inp gr

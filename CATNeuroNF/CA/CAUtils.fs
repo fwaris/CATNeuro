@@ -50,7 +50,7 @@ module CAUtils =
                         CoopGens        = 4//6//4//5
                       }            
             HsState = {Events=[]; Window=50}
-            DmState  = {EliteFrac=0.5; NormNodeProb=0.1}
+            DmState  = {Gens=0}
             NmState = {
                         TopIndv = Array.empty
                         MaxIndv = 50
@@ -66,11 +66,22 @@ module CAUtils =
             
         }
 
+    let description = function
+        | Cell (Dense d)            -> sprintf "D[%d]" d.Dims
+        | Cell (Norm n)             -> sprintf "N(%A)" n
+        | Cell (Conv2D c)           -> sprintf "C2[%d,%d,%d]" c.Kernel c.Filters c.Stride
+        | Cell (ModuleSpecies i)    -> sprintf "M[%d]" i
+        | Cell (SubGraph _)         -> ""
+        | Output d                  -> sprintf "D[%d]" d.Dims
+        | Input s                   -> s
+        | ModInput                  -> "i"
+        | ModOutput                 -> "o"
+
 
     ///generate dense or normalization cell
     ///using configured probability
-    let denseOrNorm frac cfg = 
-        if RNG.Value.NextDouble() <= frac then 
+    let denseOrNorm cfg = 
+        if RNG.Value.NextDouble() <= cfg.WtSlctn_NormNode then 
             GraphOps.genNormCell cfg
         else
             GraphOps.genDenseCell cfg
@@ -78,28 +89,21 @@ module CAUtils =
     ///insert a new node to the graph by splitting a random connection
     ///implments rules for the node type to generate
     ///given graph type and selected connection node types
-    let insertNode cfg speciesType frac (g:Graph) =
+    let insertNode cfg speciesType (g:Graph) =
         let conn = GraphOps.randConn g //randomly selected connection that is to be split
 
-        let isCell = function  Cell (Dense _) -> true | _ -> false
+        let isCell = function  Cell (Dense _) | Cell (Conv2D _) -> true | _ -> false
         
 
         let nodeToAdd =
             match speciesType, g.Nodes.[conn.From].Type, g.Nodes.[conn.To].Type with
             //module connection
-            | Module _ , Cell(Norm _)   , _
-            | Module _ , _              , Cell (Norm _)
-            | Module _ , ModInput       , ModOutput
-            | Module _ , ModInput       , Cell (Norm _) 
-            | Module _ , ModInput       , Cell (Dense _)
-            | Module _ , Cell (Norm _)  , ModOutput                      -> GraphOps.genDenseCell cfg
-            | Module _ , Cell (Dense _) , Cell (Dense _)
-            | Module _ , Cell (Dense _) , ModOutput                      -> denseOrNorm frac cfg
+            | Module _ , ModInput       , _                  -> GraphOps.genDenseConvOrNorm cfg
+            | Module _ , Cell(Norm _)   , _                  -> GraphOps.genDenseOrConv cfg
+            | Module _ , Cell(Dense _)  , _                  -> GraphOps.genDenseOrNorm cfg
+            | Module _ , Cell(Conv2D _) , _                  -> GraphOps.genDenseConvOrNorm cfg
             //blueprint connection
-            | Blueprint, Input _                , Output _                
-            | Blueprint, Cell(ModuleSpecies _)  , Output _
-            | Blueprint, Input _                , Cell (ModuleSpecies _)
-            | Blueprint, Cell (ModuleSpecies _) , Cell (ModuleSpecies _) -> GraphOps.genBlueprintCell cfg
+            | Blueprint, _              , _                  -> GraphOps.genBlueprintCell cfg            
             //any other combination is invalid
             | m        , f                      , t  -> failwithf "invalid connection %A %A %A" m f t
         if speciesType=Blueprint && isCell nodeToAdd.Type then
@@ -123,7 +127,7 @@ module CAUtils =
             |> Option.map (fun g -> {indv with Graph=g}) 
             |> Option.defaultValue indv
         else  
-            insertNode cfg speciesType st g  
+            insertNode cfg speciesType g  
             |> Option.map (fun g -> {indv with Graph=g}) 
             |> Option.defaultValue indv
        

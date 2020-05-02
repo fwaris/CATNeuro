@@ -9,7 +9,10 @@ module rec GraphOps =
     let isNorm (n:Node) = match n.Type with Cell (Norm _) -> true | _ -> false
     let inputName (n:Node) = match n.Type with Input n -> n | _ -> failwith "not named input node"
 
-    let randBias() = if RNG.Value.NextDouble() < 0.5 then Bias.On else Bias.Off
+    let flipCoin() = RNG.Value.NextDouble() < 0.5
+    let randBias() = if flipCoin() then Bias.On else Bias.Off
+    let randRange r = RNG.Value.Next(int r.Lo, int r.Hi) |> int
+    let rollWheel wts = wts |> Array.mapi (fun i x -> i,x) |> createWheel |> spinWheel
 
     ///select a random activation excluding 'ex' if provided
     let randActivation (ex:Activation option) : Activation =
@@ -33,8 +36,6 @@ module rec GraphOps =
                 norms.[RNG.Value.Next(norms.Length)]
         FSharp.Reflection.FSharpValue.MakeUnion(sel,[||]) :?> _    
 
-    let randDims cfg = RNG.Value.Next(int cfg.DenseRange.Lo, int cfg.DenseRange.Hi) |> int
-
     ///generate a new dense cell
     let genDenseCell cfg =
         let dims = RNG.Value.Next(int cfg.DenseRange.Lo, int cfg.DenseRange.Hi)
@@ -53,6 +54,18 @@ module rec GraphOps =
             Type =  Cell ntype
         }
 
+    ///generate a new dense cell
+    let genConv2DCell cfg =
+        let kernel     = cfg.KernelRange  |> randRange 
+        let filters    = cfg.FiltersRange |> randRange
+        let stride     = cfg.StrideRange  |> randRange
+        let activation = randActivation None
+        let cell = {Kernel=kernel; Filters=filters; Stride=stride; Activation=activation}
+        {
+            Id = cfg.IdGen.node() |> Id
+            Type =  Cell (Conv2D cell)
+        }
+        
     ///generate a new blueprint cell
     let genBlueprintCell cfg =
         let ntype = ModuleSpecies (RNG.Value.Next(cfg.NumSpecies)) //pick a module species at random
@@ -61,6 +74,26 @@ module rec GraphOps =
             Id = cfg.IdGen.node() |> Id
             Type =  Cell ntype
         }
+
+    let genDenseOrNorm cfg =
+        match rollWheel [|cfg.WtSlctn_DenseNode; cfg.WtSlctn_NormNode|] with
+        | 0 -> genDenseCell cfg
+        | 1 -> genNormCell cfg
+        | _ -> failwith "out of range flip value"
+        
+    let genDenseConvOrNorm cfg =
+        match rollWheel [|cfg.WtSlctn_DenseNode; cfg.WtSlctn_CovnNode; cfg.WtSlctn_NormNode|] with
+        | 0 -> genDenseCell cfg
+        | 1 -> genConv2DCell cfg
+        | 2 -> genNormCell cfg
+        | _ -> failwith "out of range flip value"
+
+    let genDenseOrConv cfg = 
+        match rollWheel [|cfg.WtSlctn_DenseNode; cfg.WtSlctn_CovnNode|] with
+        | 0 -> genDenseCell cfg
+        | 1 -> genConv2DCell cfg
+        | _ -> failwith "out of range flip value"
+
 
     ///validate graph structure
     let tryValidate (g:Graph) = 
@@ -156,11 +189,17 @@ module rec GraphOps =
 
 
     ///get a randomly selected connection
-    let randConnForToggle (g:Graph) = 
+    let randConnForToggle cfg (g:Graph) = 
         let inputs = g.Conns |> List.filter (fun c->isInput g.Nodes.[c.From])
         let outputs = g.Conns |> List.filter (fun c->isOutput g.Nodes.[c.To])
-        //exclude single input or output connections from getting turned off
-        let cnn = if inputs.Length=1 && inputs.[0].On then g.Conns |> List.filter (fun c -> not(c=inputs.[0])) else g.Conns
+
+        //safeguard input connections from being turned off, depending on configuration settings
+        let cnn = 
+            if cfg.AllowDropInputs then
+                if inputs.Length=1 && inputs.[0].On then g.Conns |> List.filter (fun c -> not(c=inputs.[0])) else g.Conns
+            else
+                g.Conns |> List.filter (fun c -> not (isInput g.Nodes.[c.From]))
+
         let cnn = if outputs.Length=1 && outputs.[0].On then cnn |> List.filter (fun c-> not(c=outputs.[0])) else cnn
         if cnn.Length > 0 then
             cnn.[CATProb.RNG.Value.Next(cnn.Length)] |> Some
@@ -255,16 +294,6 @@ module rec GraphOps =
 
         let nodes' = nodes |> List.map (fun n->n.Id,n) |> Map.ofList
 
-        //only keep connections from low numbered nodes to high numbered ones
-        //otherwise it may lead to cycles
-        //let connFwd = 
-        //    conns'' 
-        //    |> List.filter (fun c -> 
-        //        (isInput nodes'.[c.From]) 
-        //        || (isOutput nodes'.[c.To]) 
-        //        || (is2ndLater c.From c.To)) 
-
-
         let g = {a with Nodes=nodes' ; Conns=conns''}
         eliminateCycle g
 
@@ -277,7 +306,7 @@ module rec GraphOps =
 
     ///toggle a random connection
     let toggleConnection cfg (g:Graph) =
-         randConnForToggle g
+         randConnForToggle cfg g
         |> Option.map(fun oldConn ->
             let newConn = {oldConn with On=not oldConn.On}
             {g with Conns = g.Conns |> updateConns oldConn [newConn]})

@@ -67,7 +67,7 @@ module rec CAEvolve =
                         |> Option.map mass  
                         |> Option.bind (fun xs->if xs.Length >= 2 then Some(xs) else None) //don't use distribution if only 1 point in set
                         |> Option.map (CAUtils.sampleDensity bw >> clampR >> int)          //sample from kernel density estimate
-                        |> Option.defaultValue (GraphOps.randDims cfg)                     //sample from uniform, if None
+                        |> Option.defaultValue (cfg.DenseRange |> GraphOps.randRange)                     //sample from uniform, if None
 
                     let acts = 
                         pm 
@@ -123,7 +123,7 @@ module rec CAEvolve =
     module EvolveGraph = 
 
         let insertNode cfg speciesType st (indv:Individual) =
-            CAUtils.insertNode cfg speciesType st.DmState.NormNodeProb indv.Graph
+            CAUtils.insertNode cfg speciesType indv.Graph
             |> Option.map (fun g -> 
                 match GraphOps.tryValidate g with
                 | Choice1Of2 _  -> logAddNode speciesType

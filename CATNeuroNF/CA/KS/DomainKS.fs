@@ -15,10 +15,11 @@ module rec DomainKS =
         |> createWheel
 
     let acceptance ca cfg speciesType (st,topG) =
-        (st,topG)
+        let st' = {st with DmState = {st.DmState with Gens=st.DmState.Gens+1}} //for future 
+        (st',topG)
 
     let influence ca cfg speciesType st  (topP:Individual[]) (indvs:Individual[]) = 
-        let takeNum     = (float indvs.Length) * st.DmState.EliteFrac |> int
+        let takeNum     = (float indvs.Length) * cfg.EliteFraction |> int
         let byFitness   = CAUtils.rankIndvs ca indvs // pareto rank individuals|> Array.sortBy (fun ind -> ind.Fitness.[0])
         let elites      = byFitness |> Array.take takeNum
         let toReplace   = byFitness |> Array.skip takeNum
