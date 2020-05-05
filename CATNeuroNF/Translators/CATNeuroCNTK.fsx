@@ -249,8 +249,7 @@ module CATNeuroCNTK =
     let fromNode (ctx:GenAcc) conn = ctx.Graph.CnNodes.[conn.From]
 
     let merge (l,r) =
-        let ls = [l;r]
-        let ns = ls |> List.map (fun n->n)
+        let ns = [l;r] |> List.map (fun x -> (O.flatten>>O.squeeze) x)
         let ndims = ns |> List.map (O.shape) |> List.map dims |> List.map (List.fold ( * ) 1) 
         let dimSum = ndims |> Seq.map int64 |> Seq.sum 
         if dimSum <= 200L then        
@@ -266,12 +265,12 @@ module CATNeuroCNTK =
                         let df = (maxDim - d) / 2
                         let extra = maxDim - ((df * 2) + d)
                         let n' = O.pad(n, [(df,df+extra)])
-                        //printfn "%A - %A" (n |> O.shape |> dims) (n' |> O.shape |> dims)
+                        printfn "%A - %A" (n |> O.shape |> dims) (n' |> O.shape |> dims)
                         n'
                         )
-            let shouldFlatten = let h = List.head ns |> O.shape in List.tail ns |> List.forall (fun  x -> h = O.shape x) |> not
-            let ns'' = if shouldFlatten then ns' |> List.map O.flatten else ns'
-            O.sum ns''
+            //let shouldFlatten = let h = List.head ns |> O.shape in List.tail ns |> List.forall (fun  x -> h = O.shape x) |> not
+            //let fs = O.flatten
+            ns'.[0] + ns'.[1]
 
     let (|Simple|_|) (l,r) =
         let dL = (O.shape>>dims) l
@@ -340,7 +339,7 @@ module CATNeuroCNTK =
             O.splice [l';r'] |> Some
         | None -> None
 
-    let (|Flattened|_|) (l,r) = let fs = O.flatten>>O.squeeze in merge (fs l,fs r) |> Some
+    let (|Flattened|_|) (l,r) = merge ( l, r) |> Some
 
     let combine2 l r = 
         match l,r with
@@ -356,7 +355,6 @@ module CATNeuroCNTK =
     let combine (ctx:GenAcc) ls = 
         let ns = ls |> List.map (fun n->n.N) |> List.sortByDescending (fun x->x |> O.shape |> dims |> List.length)
         let ds = ns |> List.reduce ( combine2 )      //plus does broadcasting so can mix dimensions
-        let maxDim = volume ds
         {N=ds}
 
 (*
@@ -416,7 +414,7 @@ module CATNeuroCNTK =
     and matchDims2D cv2d (inp:CNTKNode) = 
         match inp.Shape.Dims.Length with
         | 3  ->
-            if inp.Shape.Dims |> List.forall (fun x-> x >= cv2d.Kernel) then 
+            if inp.Shape.Dims.[1..] |> List.forall (fun x-> x >= cv2d.Kernel) then 
                 inp
             else 
                 adjDims cv2d inp
@@ -429,6 +427,8 @@ module CATNeuroCNTK =
         | CnFunc(ds,Cell (Conv2D cv2d),fn) ->  
                                let acc',inp = resolveIncoming acc id                               
                                let n' = matchDims2D cv2d inp.N
+                               let dms = n'.Shape.Dims.Length
+                               if dms = 1 || dms = 3 then () else failwithf "unexpected %A" 3
                                let n = fn n'
                                let dr = {N=n}
                                acc' |> addNode id dr
