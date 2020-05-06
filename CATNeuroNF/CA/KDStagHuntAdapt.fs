@@ -22,7 +22,7 @@ module rec KDStagHunt =
                 Historical      , 0.2
                 Situational     , 0.3
                 Topgraphical    , 0.3
-                Domain          , 0.3
+                Domain          , 0.1
                |]
 
             2, [|                    
@@ -30,7 +30,7 @@ module rec KDStagHunt =
                 Historical      , 0.1
                 Situational     , 0.7
                 Topgraphical    , 0.3
-                Domain          , 0.3
+                Domain          , 0.1
                |]
 
             3, [|                    

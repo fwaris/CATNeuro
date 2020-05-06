@@ -130,7 +130,18 @@ type SiState = {Exemplars:Individual[]; SpinWheel:(Graph*float)[]}
 
 type CaseWheel = {Samples:int; CWheel:(UnionCaseInfo*float)[]}
 type IntWheel = {Samples:int; IWheel:(int*float)[]}
-type ParmType = PDims | PActivation | PBias | PSpecies | PNorm | PLearnRate
+type ParmType = 
+    PDims 
+    | PActivation 
+    | PBias 
+    | PSpecies 
+    | PNorm 
+    | PLearnRate
+    | PKernel
+    | PStride
+    | PFilters
+    | PActivationC2D
+
 type ClassInfo = {TotalClasses:int; Refs:int list}
 type DistVal = Case of UnionCaseInfo | Cont of float | Class of ClassInfo
 type Dist = Cases of CaseWheel | Density of float[] | Classes of IntWheel

@@ -90,6 +90,14 @@ module rec NormativeKS =
             [
                 PNorm       , Case (FSharpValue.GetUnionFields(l,typeof<NormalizationType>) |> fst)
             ]
+
+        | Conv2D cv2d -> 
+            [
+                PKernel        , Cont (float cv2d.Kernel)
+                PStride        , Cont (float cv2d.Stride)
+                PFilters       , Cont (float cv2d.Filters)
+                PActivationC2D , Case (FSharpValue.GetUnionFields(cv2d.Activation,typeof<Activation>) |> fst) 
+            ]
         | _      -> printfn "unexpected node type"; []
 
     let cases xs   = xs |> List.map (function Case u  -> u | _ -> failwith "not expected")

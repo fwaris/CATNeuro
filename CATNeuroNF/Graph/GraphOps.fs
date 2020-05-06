@@ -349,8 +349,9 @@ module rec GraphOps =
         let nType =
             match na.Type with
             | Cell (ModuleSpecies a) -> Cell (ModuleSpecies (RNG.Value.Next(cfg.NumSpecies)))
-            | Cell (Dense a)         -> Cell (Dense {a with Dims=RNG.Value.Next(int cfg.DenseRange.Lo, int cfg.DenseRange.Hi)})
+            | Cell (Dense a)         -> Cell (Dense {a with Dims=randRange cfg.DenseRange})
             | Cell (Norm a)          -> Some a |> randNormalization |> Norm |> Cell
+            | Cell (Conv2D cv2d)     -> Cell (Conv2D {cv2d with Filters=randRange cfg.FiltersRange})
             | x                      -> printfn "not mutating node of type %A" x; x
 
         {g with Nodes=g.Nodes |> Map.add nodeId {na with Type=nType}}
@@ -425,16 +426,26 @@ module rec GraphOps =
         let trimNodes = g.Nodes |> Map.filter (fun k _ -> reachable.Contains k)
         {g with Nodes=trimNodes; Conns=trimConns}
 
+    let distCont a b = abs ((float a) - (float b)) / (float (a + b))
+
     ///a measure of distance between two dense cell types
     let distDense (d1:Dense) (d2:Dense) =
-        let dist = 
-            [
-                (if (d1.Activation = d2.Activation) then 0.0 else 1.0)
-                (if (d1.Bias = d2.Bias) then 0.0 else 1.0)
-                abs ((float d1.Dims) - (float d2.Dims)) / (float (d1.Dims + d2.Dims))
-            ]
-            |> List.sum
-        dist / 3.0
+        [
+            (if (d1.Activation = d2.Activation) then 0.0 else 1.0)
+            (if (d1.Bias = d2.Bias) then 0.0 else 1.0)
+            distCont d1.Dims d2.Dims
+        ]
+        |> List.average
+
+    ///a measure of distance between two conv2d cell types
+    let distConv2d (d1:Conv2D) (d2:Conv2D) =
+        [
+            (if (d1.Activation = d2.Activation) then 0.0 else 1.0)
+            distCont d1.Filters d2.Filters
+            distCont d1.Stride d2.Stride
+            distCont d1.Kernel d2.Kernel
+        ]
+        |> List.average
 
     ///a measure of distance between two cells
     let distCell (c1:CellType) (c2:CellType) =
@@ -444,6 +455,7 @@ module rec GraphOps =
         | Norm BatchNorm, Norm BatchNorm              -> 0.0
         | Norm LayerNorm, Norm LayerNorm              -> 0.0
         | Dense d1, Dense d2                          -> distDense d1 d2
+        | Conv2D d1, Conv2D d2                        -> distConv2d d1 d2
         | SubGraph s1, SubGraph s2                    -> distGraph s1 s2
         | _, _                                        -> W
        
