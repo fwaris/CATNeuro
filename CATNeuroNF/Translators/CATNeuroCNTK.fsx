@@ -262,21 +262,24 @@ module CATNeuroCNTK =
                     if d = maxDim then 
                         n 
                     else
-                        let df = (maxDim - d) / 2
-                        let extra = maxDim - ((df * 2) + d)
-                        let n' = O.pad(n, [(df,df+extra)])
-                        printfn "%A - %A" (n |> O.shape |> dims) (n' |> O.shape |> dims)
+                        let left = (maxDim - d) / 2
+                        let right = (maxDim - d) - left
+                        let n' = O.pad(n, [(left,right)])
+                        //printfn "%A - %A" (n |> O.shape |> dims) (n' |> O.shape |> dims)
                         n'
                         )
             //let shouldFlatten = let h = List.head ns |> O.shape in List.tail ns |> List.forall (fun  x -> h = O.shape x) |> not
             //let fs = O.flatten
+            printf "%A + %A | %A + %A" l.Shape.Dims r.Shape.Dims ns'.[0].Shape.Dims ns'.[1].Shape.Dims
             ns'.[0] + ns'.[1]
+
+    let mergeSimple (l:CNTKNode,r) = if l.Shape.Dims.[0] < 200 then O.splice [l;r] else l + r
 
     let (|Simple|_|) (l,r) =
         let dL = (O.shape>>dims) l
         let dR = (O.shape>>dims) r
         if dL = dR && dL.Length = 1 then
-            Some (merge (l,r))
+            Some (mergeSimple (l,r))
         else
             None
 
@@ -308,16 +311,16 @@ module CATNeuroCNTK =
     //    else
     //        None
 
-    let (|Broadcasted|_|) (l,r) =
-        let dL = (O.shape>>dims) l
-        let dR = (O.shape>>dims) r
-        if dL.Length = 1 || dR.Length = 1 then
-            let a,aL,b,bL = if dL.Length = 1 then l,dL,r,dR else r,dR,l,dL
-            let aL' = aL @ (bL |> List.map( fun _ -> 1))
-            let a' = O.reshape(a, Ds aL')
-            Some (a' + b)
-        else
-            None
+    //let (|Broadcasted|_|) (l,r) =
+    //    let dL = (O.shape>>dims) l
+    //    let dR = (O.shape>>dims) r
+    //    if dL.Length = 1 || dR.Length = 1 then
+    //        let a,aL,b,bL = if dL.Length = 1 then l,dL,r,dR else r,dR,l,dL
+    //        let aL' = aL @ (bL.[1..] |> List.map( fun _ -> 1))
+    //        let a' = O.reshape(a, Ds aL')
+    //        Some (a' + b)
+    //    else
+    //        None
 
     let matchDims l1 r1 =
         let rec loop l r  =
@@ -341,16 +344,19 @@ module CATNeuroCNTK =
 
     let (|Flattened|_|) (l,r) = merge ( l, r) |> Some
 
-    let combine2 l r = 
-        match l,r with
-        | Simple cbn 
-        | SameDims cbn 
-        | SameRank cbn
-        //| Broadcastable cbn 
-        | Broadcasted cbn
-        | Spliceable cbn
-        | Flattened cbn      -> cbn
-        | _                  -> failwithf "unable to merge %A %A" l r
+    let combine2 (l:CNTKNode) (r:CNTKNode) = 
+        printf "in: cmbn %A <|> %A" l.Shape.Dims r.Shape.Dims
+        let out =
+            match l,r with
+            | Simple cbn         -> printf " simple"; cbn
+            | SameDims cbn       -> printf " samedims"; cbn
+            | SameRank cbn       -> printf " samerank"; cbn
+            //| Broadcasted cbn    -> printf " broadcasted"; cbn
+            | Spliceable cbn     -> printf " splicable"; cbn
+            | Flattened cbn      -> printf " flattend"; cbn
+            | _                  -> failwithf "unable to merge %A %A" l r
+        printfn " out: %A" out.Shape.Dims
+        out
 
     let combine (ctx:GenAcc) ls = 
         let ns = ls |> List.map (fun n->n.N) |> List.sortByDescending (fun x->x |> O.shape |> dims |> List.length)
