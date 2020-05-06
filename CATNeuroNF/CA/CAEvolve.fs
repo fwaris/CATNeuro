@@ -37,31 +37,31 @@ module rec CAEvolve =
 
         let clampR range v = clamp range.Lo range.Hi v 
 
-        let bandwidth range divisor = (range.Hi - range.Lo) / divisor
+        let bandwidth range = (range.Hi - range.Lo) / range.Divisions
 
-        let sampleCont pm parm range divisor = 
-            let bw = bandwidth range divisor
+        let sampleCont cfg pm parm range = 
+            let bw = bandwidth range
             let clmp = clampR range
             pm 
             |> Map.tryFind parm
             |> Option.map mass  
-            |> Option.bind (fun xs->if xs.Length >= 2 then Some(xs) else None)  //don't use distribution if only 1 point in set
+            |> Option.bind (fun xs->if xs.Length >= cfg.SamplingWarmUp then Some(xs) else None)  //don't use distribution if only 1 point in set
             |> Option.map (CAUtils.sampleDensity bw >> clmp >> int)             //sample from kernel density estimate
             |> Option.defaultValue (range |> GraphOps.randRange)                //sample from uniform, if None
 
-        let sampleActivation pm parm  = 
+        let sampleActivation cfg pm parm  = 
             pm 
             |> Map.tryFind parm
             |> Option.map caseWheel
-            |> Option.bind (fun w -> if w.Samples < w.CWheel.Length then None else Some w) //if not enough samples, don't pass dist
+            |> Option.bind (fun w -> if w.Samples < cfg.SamplingWarmUp || w.Samples < w.CWheel.Length then None else Some w) //if not enough samples, don't pass dist
             |> Option.map (fun w -> w.CWheel |> spinWheel |> reify)                        //sample from dist
             |> Option.defaultValue (GraphOps.randActivation None)                          //random, if None
 
-        let sampleBias pm parm =
+        let sampleBias cfg pm parm =
             pm 
             |> Map.tryFind parm 
             |> Option.map caseWheel
-            |> Option.bind (fun w -> if w.Samples < w.CWheel.Length then None else Some w) //if not enough samples, don't pass dist
+            |> Option.bind (fun w -> if w.Samples < cfg.SamplingWarmUp || w.Samples < w.CWheel.Length then None else Some w) //if not enough samples, don't pass dist
             |> Option.map (fun w -> w.CWheel |> spinWheel |> reify)                        //sample from dist
             |> Option.defaultValue (GraphOps.randBias())                                   //random, if None
 
@@ -69,7 +69,7 @@ module rec CAEvolve =
             pm 
             |> Map.tryFind parm 
             |> Option.map classWheel
-            |> Option.bind (fun w -> if w.Samples < w.IWheel.Length then None else Some w)  //if not enough samples, don't pass dist
+            |> Option.bind (fun w -> if w.Samples < cfg.SamplingWarmUp || w.Samples < w.IWheel.Length then None else Some w)  //if not enough samples, don't pass dist
             |> Option.map (fun w -> w.IWheel |> spinWheel |> ModuleSpecies)                 //sample from dist
             |> Option.defaultValue (cfg.NumSpecies |> CAUtils.randSpecies |> ModuleSpecies) //random, if None
 
@@ -105,9 +105,9 @@ module rec CAEvolve =
                 match n.Type with
 
                 | Cell (Dense d) -> 
-                    let dims = sampleCont pm PDims cfg.DenseRange 10.0
-                    let acts = sampleActivation pm PActivation
-                    let bias = sampleBias pm PBias
+                    let dims = sampleCont cfg pm PDims cfg.DenseRange
+                    let acts = sampleActivation cfg pm PActivation
+                    let bias = sampleBias cfg pm PBias
                     let d' = {d with Dims=dims; Activation=acts; Bias=bias}
                     Dense d'
 
@@ -116,10 +116,10 @@ module rec CAEvolve =
                 | Cell (Norm nt) -> sampleNorm nt pm PNorm
 
                 | Cell (Conv2D cv2d) ->
-                    let kernel  = sampleCont pm PKernel cfg.KernelRange 5.0
-                    let stride  = sampleCont pm PStride cfg.StrideRange 5.0
-                    let filters = sampleCont pm PFilters cfg.FiltersRange 10.0
-                    let act     = sampleActivation pm PActivationC2D 
+                    let kernel  = sampleCont cfg pm PKernel cfg.KernelRange 
+                    let stride  = sampleCont cfg pm PStride cfg.StrideRange 
+                    let filters = sampleCont cfg pm PFilters cfg.FiltersRange 
+                    let act     = sampleActivation cfg pm PActivationC2D 
                     let cv2d = {cv2d with Kernel=kernel; Stride=stride; Filters=filters; Activation=act}
                     Conv2D cv2d
 

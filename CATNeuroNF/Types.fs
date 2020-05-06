@@ -32,7 +32,7 @@ type IdGen() =
     member x.node() = let i = System.Threading.Interlocked.Increment(&nodeId) in string i
     member x.conn() = let i = System.Threading.Interlocked.Increment(&connId) in i
 
-type Range = {Lo:float; Hi:float}
+type Range = {Lo:float; Hi:float; Divisions:float (*for bandwidth calc for sampling*)}
 
 type SpeciesType = Blueprint | Module of int
 
@@ -46,6 +46,7 @@ type Cfg =
         WtSlctn_NormNode    : float 
         WtSlctn_DenseNode   : float
         WtSlctn_CovnNode    : float //set to 0. for no convolution 
+        SamplingWarmUp      : int   //random sampling is used until this many samples are available
         AllowDropInputs     : bool
         DenseRange          : Range
         KernelRange         : Range
@@ -61,13 +62,14 @@ type Cfg =
                                  WtSlctn_NormNode   = 0.1
                                  WtSlctn_DenseNode  = 1.0
                                  WtSlctn_CovnNode   = 0.0
+                                 SamplingWarmUp     = 5
                                  AllowDropInputs    = false
                                  IdGen              = IdGen()
-                                 DenseRange         = {Lo=5.;    Hi=20.}
-                                 KernelRange        = {Lo=2.;    Hi=20.}
-                                 FiltersRange       = {Lo=2.;    Hi=200.}
-                                 StrideRange        = {Lo=1.;    Hi=10.}
-                                 LearnRange         = {Lo=0.001; Hi=0.1}
+                                 DenseRange         = {Lo=5.;    Hi=20. ; Divisions=10.}
+                                 KernelRange        = {Lo=2.;    Hi=20. ; Divisions=5.}
+                                 FiltersRange       = {Lo=2.;    Hi=200.; Divisions=10.}
+                                 StrideRange        = {Lo=1.;    Hi=10. ; Divisions=5.}
+                                 LearnRange         = {Lo=0.001; Hi=0.1 ; Divisions=10.}
                               }
 
 type Knowledge  = Situational | Historical | Normative | Topgraphical | Domain 
