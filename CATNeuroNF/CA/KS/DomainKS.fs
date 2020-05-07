@@ -6,11 +6,11 @@ open CAEvolve
 module rec DomainKS = 
     let policy =
         [|
-            Crossover           , 0.2
-            AddNode             , 0.2
-            AddConnection       , 0.2
-            MutateParm          , 0.2
-            ToggleConnection    , 0.2
+            Crossover           , 0.1
+            AddNode             , 0.5
+            AddConnection       , 0.1
+            MutateParm          , 0.5
+            ToggleConnection    , 0.1
         |]
         |> createWheel
 

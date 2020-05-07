@@ -187,6 +187,11 @@ module rec GraphOps =
                 loop g'
         loop g
 
+    let checkDropConn (g:Graph) conn =
+        let g' = {g with Conns=updateConns conn [] g.Conns}
+        match tryTrimGraph g with
+        | Choice1Of2 _ -> Some conn
+        | Choice2Of2 _ -> None
 
     ///get a randomly selected connection
     let randConnForToggle cfg (g:Graph) = 
@@ -200,11 +205,21 @@ module rec GraphOps =
             else
                 g.Conns |> List.filter (fun c -> not (isInput g.Nodes.[c.From]))
 
-        let cnn = if outputs.Length=1 && outputs.[0].On then cnn |> List.filter (fun c-> not(c=outputs.[0])) else cnn
-        if cnn.Length > 0 then
-            cnn.[CATProb.RNG.Value.Next(cnn.Length)] |> Some
-        else
-            None
+        let pssblCnns = if outputs.Length=1 && outputs.[0].On then cnn |> List.filter (fun c-> not(c=outputs.[0])) else cnn
+
+        let rec loop cnns =
+            if List.length cnns = 0 then
+                None
+            else
+                let cnn = cnn.[CATProb.RNG.Value.Next(cnn.Length)]
+                match checkDropConn g cnn with
+                | Some cnn -> Some cnn
+                | None     ->
+                    let cnns' = cnns |> List.filter (fun c -> c <> cnn)
+                    loop cnns'
+
+        loop pssblCnns
+                
 
     let randConn (g:Graph) = g.Conns.[CATProb.RNG.Value.Next(g.Conns.Length)]
 
@@ -378,21 +393,20 @@ module rec GraphOps =
         | Choice1Of2 _ -> 
             let outputs = g.Nodes |> Map.toSeq |> Seq.filter (snd>>isOutput) |> Seq.map fst |> Seq.toList
 
-            let rec loop (acc,vstd,stack) ls =
+            let rec loop (vstd:Set<Id>) ls =
                 match ls with
-                | [] -> (acc,vstd,stack)
-                | (n::rest)::remain when isInput g.Nodes.[n] ->
-                    let acc' = (acc |> Set.add n, stack) ||> List.fold (flip Set.add)
+                | [] -> vstd
+                | (n::rest)::remain when isInput g.Nodes.[n] && vstd.Contains n |> not ->
                     let vstd' = Set.add n vstd
-                    loop (acc',vstd',stack) (rest::remain)
+                    loop vstd' (rest::remain)
                 | (n::rest)::remain when vstd.Contains n |> not ->
                     let vstd' = Set.add n vstd
                     let incoming = g.Conns |> List.filter (fun c-> c.On && c.To=n) |> List.map (fun x->x.From)
-                    loop (acc,vstd',n::stack) (incoming::rest::remain)
-                | (_::rest)::remain -> loop (acc,vstd,stack) (rest::remain)
-                | []::remain ->  loop (acc,vstd,pop stack) remain
+                    loop vstd' (incoming::rest::remain)
+                | (_::rest)::remain -> loop vstd (rest::remain)
+                | []::remain ->  loop vstd remain
 
-            let reachable,v,s= loop (Set.empty,Set.empty,[]) [outputs]
+            let reachable = loop Set.empty [outputs]
             let nodes = g.Nodes |> Map.filter (fun id _ -> reachable.Contains id)
             let conns = g.Conns |> List.filter (fun c->c.On && reachable.Contains c.From && reachable.Contains c.To)
             let g' = {Nodes=nodes; Conns=conns}                                                                                                    
@@ -401,30 +415,6 @@ module rec GraphOps =
             | Choice1Of2 _  -> Choice1Of2 g'
 
     let trimGraph g = match tryTrimGraph g with Choice1Of2 g' -> g' | Choice2Of2 ex -> failwith ex
-
-    ///remove dead nodes
-    ///only keep nodes that are on the path 
-    ///from inputs to outputs                   ****** TO FIX *****
-    let trimGraph2 (g:Graph) =
-        let revIds = tsort g |> List.rev |> List.toArray
-        let i = revIds |> Array.findIndex (fun id -> g.Nodes.[id] |> isOutput |> not)
-        let out,rest = set revIds.[0..i-1], Array.toList revIds.[i..]
-    
-        let revAdjM = 
-            let m = g.Nodes |> Map.map (fun k _ ->[])
-            let m2 = g.Conns |> List.filter (fun c->c.On) |> List.map (fun c->c.To,c.From) |> List.groupBy fst |> List.map (fun (k,xs)->k,xs |> List.map snd)
-            (m,m2) ||> List.fold (fun m (n,ls) -> m |> Map.add n ls)                    
-    
-        let rec traverse reachable n =
-            let reachable = reachable |> Set.add n
-            let incoming = revAdjM.[n]
-            (reachable,incoming) ||> List.fold traverse
-
-        let reachable = (Set.empty,out) ||> Set.fold traverse
-
-        let trimConns = g.Conns |> List.filter (fun c -> reachable.Contains c.From && reachable.Contains c.To)
-        let trimNodes = g.Nodes |> Map.filter (fun k _ -> reachable.Contains k)
-        {g with Nodes=trimNodes; Conns=trimConns}
 
     let distCont a b = abs ((float a) - (float b)) / (float (a + b))
 
