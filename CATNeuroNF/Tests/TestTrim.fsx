@@ -4,51 +4,55 @@ open CATNeuro.GraphDiag
 open CATNeuro.GraphOps
 open CNSetEnv
 
-let gmod : Graph =
-  {Nodes =
-      [(Id "1", {Id = Id "1";
-                 Type = ModInput;});
-       (Id "2", {Id = Id "2";
-                 Type = Cell (Dense {Dims = 14;
-                                     Bias = On;
-                                     Activation = LeakyRelu;});});
-       (Id "20", {Id = Id "20";
-                  Type = Cell (Dense {Dims = 12;
-                                      Bias = Off;
-                                      Activation = Elu;});});
-       (Id "3", {Id = Id "3";
-                 Type = ModOutput;});
-       (Id "30", {Id = Id "30";
-                  Type = Cell (Dense {Dims = 16;
-                                      Bias = On;
-                                      Activation = Relu;});})]|> Map.ofList;
-      
-   Conns =
-    [{On = false;
-      From = Id "1";
-      To = Id "2";
-      Innovation = 1;}; {On = true;
-                         From = Id "2";
-                         To = Id "3";
-                         Innovation = 2;}; {On = true;
-                                            From = Id "1";
-                                            To = Id "3";
-                                            Innovation = 38;};
-     {On = true;
-      From = Id "20";
-      To = Id "2";
-      Innovation = 68;}; {On = true;
-                          From = Id "1";
-                          To = Id "20";
-                          Innovation = 69;}; {On = true;
-                                              From = Id "30";
-                                              To = Id "2";
-                                              Innovation = 102;};
-     {On = false;
-      From = Id "1";
-      To = Id "30";
-      Innovation = 103;}];}
+let conns =
+    [
+        {   On = false
+            From = Id "1"
+            To = Id "2"
+            Innovation = 1 }
+        {   On = true
+            From = Id "2"
+            To = Id "3"
+            Innovation = 2 }
+        {   On = false
+            From = Id "1"
+            To = Id "9"
+            Innovation = 18 }
+        {   On = true
+            From = Id "9"
+            To = Id "2"
+            Innovation = 19 }
+        {   On = true
+            From = Id "1"
+            To = Id "17"
+            Innovation = 41 }
+        {   On = true
+            From = Id "17"
+            To = Id "9"
+            Innovation = 42 }
+        {   On = false
+            From = Id "1"
+            To = Id "19"
+            Innovation = 45 }
+        {   On = true
+            From = Id "19"
+            To = Id "2"
+            Innovation = 46 }
+    ]
 
+let nodes =
+    [
+        {Id=Id"1"; Type= Input "a1"}
+        {Id=Id"17"; Type= Cell (ModuleSpecies 0)}
+        {Id=Id"19"; Type= Cell (ModuleSpecies 0)}
+        {Id=Id"2"; Type= Cell (ModuleSpecies 0)}
+        { Id = Id "3"
+          Type = Output { Dims = 2
+                          Bias = Off
+                          Activation = NONE }}
+        {Id=Id"9"; Type= Cell (ModuleSpecies 0)}
+    ]
 
-let gmodt = GraphOps.trimGraph gmod
-CNSetEnv.showGraph "trimmed" gmodt
+let g = {Nodes=nodes |> List.map(fun n->n.Id,n) |> Map.ofList; Conns=conns}
+
+trimGraph g

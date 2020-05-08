@@ -13,6 +13,7 @@ module GraphDrawing =
         | Cell (Dense d) -> n.LabelText <- sprintf "%s [D%d]" n.LabelText d.Dims
         | Cell (Norm nt) -> n.LabelText <- sprintf "%s [N %A]" n.LabelText nt
         | Cell (SubGraph g) -> n.LabelText <- sprintf "%s [SG]" n.LabelText
+        | Cell (Conv2D g) -> n.LabelText <- sprintf "%s [Cn(%d,%d,%d)]" n.LabelText g.Kernel g.Filters g.Stride
         | Output d -> n.LabelText <- sprintf "%s [%d]" n.LabelText d.Dims
         | Input s -> n.LabelText <- s 
         | ModInput 

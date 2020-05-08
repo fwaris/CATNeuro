@@ -384,6 +384,9 @@ module rec GraphOps =
     let flip f a b = f b a
     let pop st = match st with [] -> [] | _::tail -> tail
 
+    let incoming g n = g.Conns |> List.filter (fun c-> c.On && c.To=n) |> List.map (fun x->x.From)
+    let outgoing g n = g.Conns |> List.filter (fun c-> c.On && c.From=n) |> List.map (fun x->x.To)
+
     ///remove dead nodes
     ///only keep nodes that are on the path 
     ///from inputs to outputs                   
@@ -392,21 +395,24 @@ module rec GraphOps =
         | Choice2Of2 ex -> Choice2Of2 ex
         | Choice1Of2 _ -> 
             let outputs = g.Nodes |> Map.toSeq |> Seq.filter (snd>>isOutput) |> Seq.map fst |> Seq.toList
+            let inputs = g.Nodes |> Map.toSeq |> Seq.filter (snd>>isInput) |> Seq.map fst |> Seq.toList
 
-            let rec loop (vstd:Set<Id>) ls =
+            let rec loop isTerminal getLinks (vstd:Set<Id>) ls =
                 match ls with
                 | [] -> vstd
-                | (n::rest)::remain when isInput g.Nodes.[n] && vstd.Contains n |> not ->
+                | (n::rest)::remain when isTerminal g.Nodes.[n] && vstd.Contains n |> not ->
                     let vstd' = Set.add n vstd
-                    loop vstd' (rest::remain)
+                    loop isTerminal getLinks vstd' (rest::remain)
                 | (n::rest)::remain when vstd.Contains n |> not ->
                     let vstd' = Set.add n vstd
-                    let incoming = g.Conns |> List.filter (fun c-> c.On && c.To=n) |> List.map (fun x->x.From)
-                    loop vstd' (incoming::rest::remain)
-                | (_::rest)::remain -> loop vstd (rest::remain)
-                | []::remain ->  loop vstd remain
+                    let linkedNodes = getLinks g n
+                    loop isTerminal getLinks vstd' (linkedNodes::rest::remain)
+                | (_::rest)::remain -> loop isTerminal getLinks vstd (rest::remain)
+                | []::remain ->  loop isTerminal getLinks vstd remain
 
-            let reachable = loop Set.empty [outputs]
+            let reachableByOutput = loop isInput incoming Set.empty [outputs]
+            let reachableByInputs = loop isOutput outgoing Set.empty [inputs]
+            let reachable = Set.intersect reachableByInputs reachableByOutput
             let nodes = g.Nodes |> Map.filter (fun id _ -> reachable.Contains id)
             let conns = g.Conns |> List.filter (fun c->c.On && reachable.Contains c.From && reachable.Contains c.To)
             let g' = {Nodes=nodes; Conns=conns}                                                                                                    
