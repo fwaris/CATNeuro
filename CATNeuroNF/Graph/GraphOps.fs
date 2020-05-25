@@ -195,11 +195,11 @@ module rec GraphOps =
 
     let checkDropConn cfg (g:Graph) conn =
         let g' = {g with Conns=updateConns conn [] g.Conns}
-        match tryTrimGraph g with
-        | Choice1Of2 g' -> if cfg.AllowDropInputs then 
+        match tryTrimGraph g' with
+        | Choice1Of2 g'' -> if cfg.AllowDropInputs then 
                                 Some conn 
                             else 
-                                if List.length(inputNodes g') = List.length(inputNodes g) then 
+                                if List.length(inputNodes g'') = List.length(inputNodes g) then 
                                     Some conn 
                                 else 
                                     None
