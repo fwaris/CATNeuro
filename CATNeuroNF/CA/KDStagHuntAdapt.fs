@@ -59,9 +59,9 @@ module rec KDStagHunt =
             6, [|                    
                 Normative       , 0.0
                 Historical      , 0.0
-                Situational     , 0.1
-                Topgraphical    , 0.7
-                Domain          , 0.7
+                Situational     , 0.0
+                Topgraphical    , 0.2
+                Domain          , 0.8
                |]
 
         ]
@@ -139,18 +139,18 @@ module rec KDStagHunt =
     let fitnessById (i:Individual) = i.Id, i.Fitness
     ///distribute knowledge for cooperative phase
     let cooperativeDist ca st speciesType (pop:Individual[]) = //assume pop is sorted in order of index
-        //let pct =  [0.8; 0.7; 0.6; 0.5].[st.ShState.GensSinceInit |> min 3]   //base line
+        let pct =  [0.8; 0.7; 0.6; 0.5].[st.ShState.GensSinceInit |> min 3]   //base line
         //let pct =  [0.9; 0.6; 0.6; 0.9].[st.ShState.GensSinceInit |> min 3]   
         //let pct =  [0.9; 0.7; 0.7; 0.9].[st.ShState.GensSinceInit |> min 3]   //* prev
         //let pct =  [0.7; 0.6; 0.4; 0.2].[st.ShState.GensSinceInit |> min 3]
-        let pct =  [0.99; 0.8; 0.7; 0.7].[st.ShState.GensSinceInit |> min 3]   
+        //let pct =  [0.99; 0.8; 0.7; 0.7].[st.ShState.GensSinceInit |> min 3]   
         printfn "pct %f" pct
         let pop' =
             pop
             |> Array.map (fun indv ->
                 let frnds = ca.Network pop indv.Id 
                 let all = Array.append frnds [|indv|]
-                let ranked = CAUtils.scaledParetoAdapt pct (all |> Array.map fitnessById)
+                let ranked = CAUtils.scaledPareto pct (all |> Array.map fitnessById)
                 let myRank = ranked |> Array.findIndex(fun id->id=indv.Id)
 
                 let adjWheel = 

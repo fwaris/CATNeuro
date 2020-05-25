@@ -135,9 +135,9 @@ module rec GraphOps =
 
                             Choice1Of2 (adjM,inputs)
     
-    exception Cycle of Id
+    exception PossibleCycle of Id
 
-    ///topologically sort grpah
+    ///topologically sort graph
     let tsort (g:Graph) =
         let adjM,inputs = match tryValidate g with Choice1Of2 x -> x | Choice2Of2 ex -> failwith ex
 
@@ -153,7 +153,7 @@ module rec GraphOps =
                 acc |> List.rev
             else
                 let (dgr,id) as minE = q |> Set.minElement 
-                if dgr <> 0 then raise (Cycle id)//failwithf "Invalid graph: cycle detected involving node %A" id
+                if dgr <> 0 then raise (PossibleCycle id)//failwithf "Invalid graph: cycle detected involving node %A" id
                 let conns = adjM.[id]
                 let q = q |> Set.remove minE
                 let (m,q) = ((m,q),conns) ||> List.fold (fun (m,q) toId -> 
@@ -172,26 +172,38 @@ module rec GraphOps =
 
     let removeLinkTo (g:Graph) id =
         let incomings = g.Conns |> List.filter (fun c->c.To = id)
-        if incomings.Length <=1 then failwithf "no cycle for id %A" id
-        let toRmove = incomings |> List.maxBy (fun c->c.Innovation)    //remove last innovation
-        {g with Conns = g.Conns |> List.filter (fun c-> c <> toRmove)}        
+        if incomings.Length <=1 then 
+            printfn "no cycle to eliminate for id %A" id
+            None
+        else
+            let toRmove = incomings |> List.maxBy (fun c->c.Innovation)    //remove last innovation
+            Some {g with Conns = g.Conns |> List.filter (fun c-> c <> toRmove)}        
 
     let eliminateCycle g =
         let rec loop g =
             try
                 let _ = tsort g
                 g
-            with (Cycle id) -> 
+            with (PossibleCycle id) -> 
                 let g' = removeLinkTo g id
-                printfn "remove cycled for %A" id
-                loop g'
+                match g' with
+                | None -> g
+                | Some g -> loop g
         loop g
 
-    let checkDropConn (g:Graph) conn =
+    let inputNodes (g:Graph) = g.Nodes |> Map.toList |> List.map snd |> List.filter isInput
+
+    let checkDropConn cfg (g:Graph) conn =
         let g' = {g with Conns=updateConns conn [] g.Conns}
         match tryTrimGraph g with
-        | Choice1Of2 _ -> Some conn
-        | Choice2Of2 _ -> None
+        | Choice1Of2 g' -> if cfg.AllowDropInputs then 
+                                Some conn 
+                            else 
+                                if List.length(inputNodes g') = List.length(inputNodes g) then 
+                                    Some conn 
+                                else 
+                                    None
+        | Choice2Of2 _  -> None
 
     ///get a randomly selected connection
     let randConnForToggle cfg (g:Graph) = 
@@ -212,7 +224,7 @@ module rec GraphOps =
                 None
             else
                 let cnn = cnn.[CATProb.RNG.Value.Next(cnn.Length)]
-                match checkDropConn g cnn with
+                match checkDropConn cfg g cnn with
                 | Some cnn -> Some cnn
                 | None     ->
                     let cnns' = cnns |> List.filter (fun c -> c <> cnn)
@@ -238,7 +250,7 @@ module rec GraphOps =
         |> Seq.filter (isOutput>>not)
         |> Seq.toArray      
 
-    ///return a new possible random connection that does not yet exist (or None if not possible)
+    ///return a random 'possible connection' (i.e. that does not yet exist) or None if not possible
     let randUnconn (g:Graph) =
         let ns = tsort g |> List.toArray     //topological sort to avoid cyclic references
         let connected = g.Conns |> List.map(fun c->c.From,c.To) |> set

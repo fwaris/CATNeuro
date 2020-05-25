@@ -249,7 +249,7 @@ module CATNeuroCNTK =
     let fromNode (ctx:GenAcc) conn = ctx.Graph.CnNodes.[conn.From]
 
     let merge (l,r) =
-        let ns = [l;r] |> List.map (fun x -> (O.flatten>>O.squeeze) x)
+        let ns = [l;r] |> List.map (fun (x:CNTKNode) -> if x.Shape.Dims.Length=1 then x else  (O.flatten>>O.squeeze) x)
         let ndims = ns |> List.map (O.shape) |> List.map dims |> List.map (List.fold ( * ) 1) 
         let dimSum = ndims |> Seq.map int64 |> Seq.sum 
         if dimSum <= 200L then        
@@ -345,17 +345,17 @@ module CATNeuroCNTK =
     let (|Flattened|_|) (l,r) = merge ( l, r) |> Some
 
     let combine2 (l:CNTKNode) (r:CNTKNode) = 
-        printf "in: cmbn %A <|> %A" l.Shape.Dims r.Shape.Dims
+        //printf "in: cmbn %A <|> %A" l.Shape.Dims r.Shape.Dims
         let out =
             match l,r with
-            | Simple cbn         -> printf " simple"; cbn
-            | SameDims cbn       -> printf " samedims"; cbn
-            | SameRank cbn       -> printf " samerank"; cbn
+            | Simple cbn         -> (*printf " simple";*) cbn
+            | SameDims cbn       -> (*printf " samedims";*) cbn
+            | SameRank cbn       -> (*printf " samerank";*) cbn
             //| Broadcasted cbn    -> printf " broadcasted"; cbn
-            | Spliceable cbn     -> printf " splicable"; cbn
-            | Flattened cbn      -> printf " flattend"; cbn
+            | Spliceable cbn     -> (*printf " splicable";*) cbn
+            | Flattened cbn      -> (*printf " flattend";*) cbn
             | _                  -> failwithf "unable to merge %A %A" l r
-        printfn " out: %A" out.Shape.Dims
+        //printfn " out: %A" out.Shape.Dims
         out
 
     let combine (ctx:GenAcc) ls = 
