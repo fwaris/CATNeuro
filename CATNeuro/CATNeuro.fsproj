@@ -1,11 +1,47 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="4.7.0" />
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="CATProb.fs" />
+    <Compile Include="KMeans.fs" />
+    <Compile Include="Extensions.fs" />
+    <Compile Include="Types.fs" />
+    <Compile Include="Graph\GraphOps.fs" />
+    <Compile Include="Graph\GraphDiag.fs" />
+    <Compile Include="Metrics\CnObservableExt.fs" />
+    <Compile Include="Metrics\CnMetrics.fs" />
+    <Compile Include="CA\CAUtils.fs" />
+    <Compile Include="CA\CAEvolve.fs" />
+    <Compile Include="CA\KDStagHunt.fs" />
+    <Compile Include="CA\KDStagHuntAdapt.fs" />
+    <Compile Include="CA\KDWtdMajority.fs" />
+    <Compile Include="CA\StagHuntStoch.fs" />
+    <Compile Include="CA\KS\DomainKS.fs" />
+    <Compile Include="CA\KS\HistoryKS.fs" />
+    <Compile Include="CA\KS\NormativeKS.fs" />
+    <Compile Include="CA\KS\SituationalKS.fs" />
+    <Compile Include="CA\KS\TopographicKS.fs" />
+    <Compile Include="CA\BeliefSpace.fs" />
+    <Compile Include="CA\CARunner.fs" />
+    <Compile Include="NEAT\ElitistKS.fs" />
+    <Compile Include="NEAT\ElitistBeliefSpace.fs" />
+    <Compile Include="NEAT\ElitistRunner.fs" />
+    <Content Include="Docs\NeuroEvolution.txt" />
+    <None Include="Tests\CNReferences.fsx" />
+    <None Include="Tests\CNSetEnv.fsx" />
+    <None Include="Tests\GraphEvolution.fsx" />
+    <None Include="Tests\TestRanking.fsx" />
+    <None Include="Tests\TestTrim.fsx" />
+    <None Include="Translators\CATNeuroCNTK.fsx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FsPickler" Version="5.3.2" />
+    <PackageReference Include="MathNet.Numerics.FSharp" Version="4.15.0" />
   </ItemGroup>
 
 </Project>

@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29102.190
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "CATNeuroNF", "CATNeuroNF\CATNeuroNF.fsproj", "{2D312756-B788-4C8E-95EB-ABBD95C8C491}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "CATNeuro", "CATNeuro\CATNeuro.fsproj", "{0BEE57EC-146C-47E6-9CCF-8A10CF1A3838}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "CATNeuroCore", "CATNeuroCore\CATNeuroCore.fsproj", "{5DBCC269-C752-4409-9A11-9D9AB2E8A198}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "CATNeuroCharts", "CATNeuroCharts\CATNeuroCharts.fsproj", "{CC6D9A62-8A4E-4959-9887-567B24664424}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,14 +13,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{2D312756-B788-4C8E-95EB-ABBD95C8C491}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2D312756-B788-4C8E-95EB-ABBD95C8C491}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2D312756-B788-4C8E-95EB-ABBD95C8C491}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2D312756-B788-4C8E-95EB-ABBD95C8C491}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5DBCC269-C752-4409-9A11-9D9AB2E8A198}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5DBCC269-C752-4409-9A11-9D9AB2E8A198}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5DBCC269-C752-4409-9A11-9D9AB2E8A198}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5DBCC269-C752-4409-9A11-9D9AB2E8A198}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0BEE57EC-146C-47E6-9CCF-8A10CF1A3838}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0BEE57EC-146C-47E6-9CCF-8A10CF1A3838}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0BEE57EC-146C-47E6-9CCF-8A10CF1A3838}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0BEE57EC-146C-47E6-9CCF-8A10CF1A3838}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC6D9A62-8A4E-4959-9887-567B24664424}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC6D9A62-8A4E-4959-9887-567B24664424}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC6D9A62-8A4E-4959-9887-567B24664424}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC6D9A62-8A4E-4959-9887-567B24664424}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0-windows</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="CnTraceCharts.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FW-FSharp.Charting.Core" Version="2.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CATNeuro\CATNeuro.fsproj" />
+  </ItemGroup>
+
+</Project>
