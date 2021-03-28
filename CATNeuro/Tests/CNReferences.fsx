@@ -9,8 +9,8 @@
 
 #r "nuget: FsPickler"
 #r "nuget: MathNet.Numerics.FSharp"
-#r "nuget: FSharp.Charting"            //need different version here
 #r "nuget: Microsoft.Msagl.GraphViewerGDI"
+#r "nuget: FSharp.Charting"            //need different version here
 
 #r "System.Windows.Forms"
 #r "System.Windows.Forms.DataVisualization"

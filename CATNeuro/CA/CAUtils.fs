@@ -5,15 +5,12 @@ open FSharp.Reflection
 open Ext
 open System
 
-
-
 module MUtils =
     let popId = function Blueprint -> CnMetrics.B | Module i -> CnMetrics.M i
 
 module CAUtils =
 
     let HIGH_VAL = 1e10 //max value of fitness
-
 
     ///select a random Knowledge, excluding 'ex' if given
     let randKS (ex:Knowledge option) : Knowledge = 
@@ -39,7 +36,6 @@ module CAUtils =
         let n = mass.[RNG.Value.Next(mass.Length)]
         let k = GAUSS 0.0 bandwidth
         n + k
-        
 
     let initState (pop:Population) =
         {
@@ -66,8 +62,17 @@ module CAUtils =
             
         }
 
+    let act = function 
+        | Activation.Elu -> "Elu"
+        | Activation.LeakyRelu -> "LkyRlu"
+        | Activation.Relu -> "Rlu"
+        | Activation.NONE -> ""
+        | Activation.Sig  -> "Sig"
+        | Activation.TanH -> "TanH"
+
     let description = function
-        | Cell (Dense d)            -> sprintf "D[%d]" d.Dims
+        | Cell (Dense d)            -> sprintf "D[%d,%A]>%s" d.Dims d.Bias (act d.Activation)
+        | Cell (DropOut d)          -> sprintf "Dr[%f]" d
         | Cell (Norm n)             -> sprintf "N(%A)" n
         | Cell (Conv2D c)           -> sprintf "C2[%d,%d,%d]" c.Kernel c.Filters c.Stride
         | Cell (ModuleSpecies i)    -> sprintf "M[%d]" i
@@ -76,7 +81,6 @@ module CAUtils =
         | Input s                   -> s
         | ModInput                  -> "i"
         | ModOutput                 -> "o"
-
 
     ///generate dense or normalization cell
     ///using configured probability
@@ -100,9 +104,11 @@ module CAUtils =
             //module connection
             | Module _ , ModInput       , _                  -> GraphOps.genDenseConvOrNorm cfg
             | Module _ , Cell(Norm _)   , _                  -> GraphOps.genDenseOrConv cfg
-            | Module _ , Cell(Dense _)  , _                  -> GraphOps.genDenseOrNorm cfg
+            | Module _ , Cell(Dense _)  , _                  -> GraphOps.genDenseOrNormOrDropOrConv cfg
             | Module _ , Cell(Conv2D _) , _                  -> GraphOps.genDenseConvOrNorm cfg
+            | Module _ , Cell(DropOut _), _                  -> GraphOps.genDenseConvOrNorm cfg
             //blueprint connection
+            | Blueprint, Input _        , _                  -> GraphOps.genBlueprintCellPreferEmbedding cfg
             | Blueprint, _              , _                  -> GraphOps.genBlueprintCell cfg            
             //any other combination is invalid
             | m        , f                      , t  -> failwithf "invalid connection %A %A %A" m f t

@@ -46,8 +46,8 @@ module rec CAEvolve =
             |> Map.tryFind parm
             |> Option.map mass  
             |> Option.bind (fun xs->if xs.Length >= cfg.SamplingWarmUp then Some(xs) else None)  //don't use distribution if only 1 point in set
-            |> Option.map (CAUtils.sampleDensity bw >> clmp >> int)             //sample from kernel density estimate
-            |> Option.defaultValue (range |> GraphOps.randRange)                //sample from uniform, if None
+            |> Option.map (CAUtils.sampleDensity bw >> clmp)             //sample from kernel density estimate
+            |> Option.defaultValue (range |> GraphOps.randRange)         //sample from uniform, if None
 
         let sampleActivation cfg pm parm  = 
             pm 
@@ -105,7 +105,7 @@ module rec CAEvolve =
                 match n.Type with
 
                 | Cell (Dense d) -> 
-                    let dims = sampleCont cfg pm PDims cfg.DenseRange
+                    let dims = sampleCont cfg pm PDims cfg.DenseRange |> int
                     let acts = sampleActivation cfg pm PActivation
                     let bias = sampleBias cfg pm PBias
                     let d' = {d with Dims=dims; Activation=acts; Bias=bias}
@@ -116,12 +116,14 @@ module rec CAEvolve =
                 | Cell (Norm nt) -> sampleNorm nt pm PNorm
 
                 | Cell (Conv2D cv2d) ->
-                    let kernel  = sampleCont cfg pm PKernel cfg.KernelRange 
-                    let stride  = sampleCont cfg pm PStride cfg.StrideRange 
-                    let filters = sampleCont cfg pm PFilters cfg.FiltersRange 
+                    let kernel  = sampleCont cfg pm PKernel cfg.KernelRange   |> int
+                    let stride  = sampleCont cfg pm PStride cfg.StrideRange   |> int
+                    let filters = sampleCont cfg pm PFilters cfg.FiltersRange |> int
                     let act     = sampleActivation cfg pm PActivationC2D 
                     let cv2d = {cv2d with Kernel=kernel; Stride=stride; Filters=filters; Activation=act}
                     Conv2D cv2d
+
+                | Cell (DropOut _) -> sampleCont cfg pm PDropOut cfg.DropOutRange |> DropOut
 
                 | x -> failwithf "case not handled %A" x
             {n with Type = Cell ty}

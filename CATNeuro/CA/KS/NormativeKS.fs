@@ -98,6 +98,10 @@ module rec NormativeKS =
                 PFilters       , Cont (float cv2d.Filters)
                 PActivationC2D , Case (FSharpValue.GetUnionFields(cv2d.Activation,typeof<Activation>) |> fst) 
             ]
+        | DropOut drp ->
+            [
+                PDropOut      , Cont drp
+            ]
         | _      -> printfn "unexpected node type"; []
 
     let cases xs   = xs |> List.map (function Case u  -> u | _ -> failwith "not expected")

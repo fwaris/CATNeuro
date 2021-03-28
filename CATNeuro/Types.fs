@@ -23,6 +23,7 @@ type CellType =
     | Dense of Dense
     | Conv2D of Conv2D
     | Norm of NormalizationType
+    | DropOut of float
     | SubGraph of Graph
 
 
@@ -41,11 +42,13 @@ type IndvidualType = BlueprintIndv of LearningParms | ModuleIndv
 type Cfg =
     {
         MaxNodes            : int
+        EmbeddingSpecies    : int list
         NumSpecies          : int
         EliteFraction       : float
         WtSlctn_NormNode    : float 
         WtSlctn_DenseNode   : float
         WtSlctn_CovnNode    : float //set to 0. for no convolution 
+        WtSlctn_DropNode    : float //set to 0. for no convolution 
         SamplingWarmUp      : int   //random sampling is used until this many samples are available
         AllowDropInputs     : bool
         DenseRange          : Range
@@ -53,15 +56,18 @@ type Cfg =
         FiltersRange        : Range
         StrideRange         : Range
         LearnRange          : Range
+        DropOutRange        : Range
         IdGen               : IdGen
     }
     static member Default() = {  
                                  MaxNodes           = 10
+                                 EmbeddingSpecies   = [0]
                                  NumSpecies         = 2; 
                                  EliteFraction      = 0.5
-                                 WtSlctn_NormNode   = 0.1
+                                 WtSlctn_NormNode   = 0.2
                                  WtSlctn_DenseNode  = 1.0
                                  WtSlctn_CovnNode   = 0.0
+                                 WtSlctn_DropNode   = 0.2
                                  SamplingWarmUp     = 5
                                  AllowDropInputs    = false
                                  IdGen              = IdGen()
@@ -70,6 +76,7 @@ type Cfg =
                                  FiltersRange       = {Lo=2.;    Hi=200.; Divisions=10.}
                                  StrideRange        = {Lo=1.;    Hi=10. ; Divisions=5.}
                                  LearnRange         = {Lo=0.001; Hi=0.1 ; Divisions=10.}
+                                 DropOutRange       = {Lo=0.3;   Hi=0.8 ; Divisions=5.}
                               }
 
 type Knowledge  = Situational | Historical | Normative | Topgraphical | Domain 
@@ -143,6 +150,7 @@ type ParmType =
     | PStride
     | PFilters
     | PActivationC2D
+    | PDropOut
 
 type ClassInfo = {TotalClasses:int; Refs:int list}
 type DistVal = Case of UnionCaseInfo | Cont of float | Class of ClassInfo

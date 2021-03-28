@@ -1,9 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFrameworks>netstandard2.1;net4.8</TargetFrameworks>
+    <Version>1.2.1</Version>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Company />
+    <Authors>Faisal Waris</Authors>
+    <Copyright>Copyright © 2021</Copyright>
+    <PackageProjectUrl>https://github.com/fwaris/CATNeuro</PackageProjectUrl>
+    <Description>Neural architecture search for deep learning models based on the NEAT (Neuroevolution of Augmenting Topologies) methodology. Two types of evolutionary drivers are included: a) Cultural Algorithms and b) NEAT's basic elitist approach. See project site for details. CATNeuro requires a translator / evaluator to translate abstract neural network models into concrete models for a particular deep learning toolkit. The project site provides an example of a translator for the CNTK toolkit at this time.</Description>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="CATProb.fs" />
@@ -31,6 +36,7 @@
     <Compile Include="NEAT\ElitistBeliefSpace.fs" />
     <Compile Include="NEAT\ElitistRunner.fs" />
     <Content Include="Docs\NeuroEvolution.txt" />
+    <Content Include="Tests\global.json" />
     <None Include="Tests\CNReferences.fsx" />
     <None Include="Tests\CNSetEnv.fsx" />
     <None Include="Tests\GraphEvolution.fsx" />
@@ -38,10 +44,11 @@
     <None Include="Tests\TestTrim.fsx" />
     <None Include="Translators\CATNeuroCNTK.fsx" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="FsPickler" Version="5.3.2" />
     <PackageReference Include="MathNet.Numerics.FSharp" Version="4.15.0" />
   </ItemGroup>
-
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="5.0.1" />
+  </ItemGroup>
 </Project>

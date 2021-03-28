@@ -11,7 +11,11 @@ module rec GraphOps =
 
     let flipCoin() = RNG.Value.NextDouble() < 0.5
     let randBias() = if flipCoin() then Bias.On else Bias.Off
-    let randRange r = RNG.Value.Next(int r.Lo, int r.Hi) |> int
+    //let randRange r = RNG.Value.Next(int r.Lo, int r.Hi) |> int
+    let randRange r = 
+        let (low,high) = r.Lo,r.Hi
+        let r = RNG.Value.NextDouble() 
+        low + ((high-low) * r)
     let rollWheel wts = wts |> Array.mapi (fun i x -> i,x) |> createWheel |> spinWheel
 
     ///select a random activation excluding 'ex' if provided
@@ -54,11 +58,20 @@ module rec GraphOps =
             Type =  Cell ntype
         }
 
+    ///generate a new dropout cell
+    let genDropCell cfg =
+        printfn $"**** drop cell"
+        let ntype = DropOut (randRange cfg.DropOutRange)
+        {
+            Id = cfg.IdGen.node() |> Id
+            Type =  Cell ntype
+        }
+
     ///generate a new dense cell
     let genConv2DCell cfg =
-        let kernel     = cfg.KernelRange  |> randRange 
-        let filters    = cfg.FiltersRange |> randRange
-        let stride     = cfg.StrideRange  |> randRange
+        let kernel     = cfg.KernelRange  |> randRange |> int
+        let filters    = cfg.FiltersRange |> randRange |> int
+        let stride     = cfg.StrideRange  |> randRange |> int
         let activation = randActivation None
         let cell = {Kernel=kernel; Filters=filters; Stride=stride; Activation=activation}
         {
@@ -67,9 +80,18 @@ module rec GraphOps =
         }
         
     ///generate a new blueprint cell
+    let genBlueprintCellPreferEmbedding cfg =
+        let spcs = [0 .. cfg.NumSpecies-1] @ cfg.EmbeddingSpecies
+        let selSpcs = RNG.Value.Next(spcs.Length)
+        let ntype = ModuleSpecies (selSpcs)
+        {
+            Id = cfg.IdGen.node() |> Id
+            Type =  Cell ntype
+        }
+
+    ///generate a new blueprint cell
     let genBlueprintCell cfg =
         let ntype = ModuleSpecies (RNG.Value.Next(cfg.NumSpecies)) //pick a module species at random
-        let dims = RNG.Value.Next(int cfg.DenseRange.Lo, int cfg.DenseRange.Hi)
         {
             Id = cfg.IdGen.node() |> Id
             Type =  Cell ntype
@@ -86,6 +108,14 @@ module rec GraphOps =
         | 0 -> genDenseCell cfg
         | 1 -> genConv2DCell cfg
         | 2 -> genNormCell cfg
+        | _ -> failwith "out of range flip value"
+        
+    let genDenseOrNormOrDropOrConv cfg =
+        match rollWheel [|cfg.WtSlctn_DenseNode; cfg.WtSlctn_NormNode; cfg.WtSlctn_DropNode; cfg.WtSlctn_CovnNode|] with
+        | 0 -> genDenseCell cfg
+        | 1 -> genNormCell cfg
+        | 2 -> genDropCell cfg   
+        | 3 -> genConv2DCell cfg
         | _ -> failwith "out of range flip value"
 
     let genDenseOrConv cfg = 
@@ -367,6 +397,7 @@ module rec GraphOps =
             | Cell (ModuleSpecies a), Cell (ModuleSpecies b) -> Cell (ModuleSpecies b)
             | Cell (Dense a), Cell (Dense b)                 -> Cell (Dense b)
             | Cell (Norm a), Cell (Norm b)                   -> Cell (Norm b)
+            | Cell (DropOut a), Cell (DropOut b)             -> Cell (DropOut b)
             | x,_ -> x
         {g with Nodes=g.Nodes |> Map.add nodeId {na with Type=nType}}
 
@@ -376,9 +407,10 @@ module rec GraphOps =
         let nType =
             match na.Type with
             | Cell (ModuleSpecies a) -> Cell (ModuleSpecies (RNG.Value.Next(cfg.NumSpecies)))
-            | Cell (Dense a)         -> Cell (Dense {a with Dims=randRange cfg.DenseRange})
+            | Cell (Dense a)         -> Cell (Dense {a with Dims=randRange cfg.DenseRange |> int})
             | Cell (Norm a)          -> Some a |> randNormalization |> Norm |> Cell
-            | Cell (Conv2D cv2d)     -> Cell (Conv2D {cv2d with Filters=randRange cfg.FiltersRange})
+            | Cell (Conv2D cv2d)     -> Cell (Conv2D {cv2d with Filters=randRange cfg.FiltersRange |> int})
+            | Cell (DropOut drp)     -> Cell (DropOut (randRange cfg.DropOutRange))
             | x                      -> printfn "not mutating node of type %A" x; x
 
         {g with Nodes=g.Nodes |> Map.add nodeId {na with Type=nType}}
@@ -465,6 +497,7 @@ module rec GraphOps =
         | Dense d1, Dense d2                          -> distDense d1 d2
         | Conv2D d1, Conv2D d2                        -> distConv2d d1 d2
         | SubGraph s1, SubGraph s2                    -> distGraph s1 s2
+        | DropOut d1, DropOut d2                      -> abs (d2 - d1)
         | _, _                                        -> W
        
     ///a measure of distance between two nodes
