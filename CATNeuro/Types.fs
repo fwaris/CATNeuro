@@ -61,7 +61,7 @@ type Cfg =
     }
     static member Default() = {  
                                  MaxNodes           = 10
-                                 EmbeddingSpecies   = [0]
+                                 EmbeddingSpecies   = []
                                  NumSpecies         = 2; 
                                  EliteFraction      = 0.5
                                  WtSlctn_NormNode   = 0.2

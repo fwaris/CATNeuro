@@ -82,7 +82,7 @@ module rec GraphOps =
     ///generate a new blueprint cell
     let genBlueprintCellPreferEmbedding cfg =
         let spcs = [0 .. cfg.NumSpecies-1] @ cfg.EmbeddingSpecies
-        let selSpcs = RNG.Value.Next(spcs.Length)
+        let selSpcs = spcs.[RNG.Value.Next(spcs.Length)]
         let ntype = ModuleSpecies (selSpcs)
         {
             Id = cfg.IdGen.node() |> Id
